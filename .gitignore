@@ -3,3 +3,4 @@ images/
 **/*.bin
 **/*.csv
 __pycache__/
+**/*.pdf
