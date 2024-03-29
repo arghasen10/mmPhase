@@ -358,20 +358,20 @@ def plot_dopppler_mobicom(doppler_vel_frame_wise,mobicom_vel_frame_wise,info_dic
     for i,ele in enumerate(doppler_vel_frame_wise):
         doppler_vel_frame_wise[i]=doppler_vel_frame_wise[i]*-1
     plt.figure(figsize=(10, 6))
-    plt.plot(doppler_vel_frame_wise, label='Doppler Velocity', marker='o', markersize=5, linestyle='-', linewidth=1, alpha=0.7)
-    plt.plot(mobicom_vel_frame_wise, label='MobiCom Velocity', marker='x', linestyle='--', linewidth=1, alpha=0.7)
+    plt.plot(doppler_vel_frame_wise, label='$V_{dop}$', marker='o', markersize=5, linestyle='-', linewidth=1, alpha=0.7)
+    plt.plot(mobicom_vel_frame_wise, label='$mmPhase$', marker='x', linestyle='--', linewidth=1, alpha=0.7)
     plt.ylim(-0.5, 0.5)  # Setting y-axis limit
-    plt.xlabel('Frame')
-    plt.ylabel('Velocity')
-    plt.title(f'Velocity Frame Wise Comparison {info_dict["filename"][0]}\n pwm value={info_dict[" PWM"][0]} \n Expected_speed: {info_dict[" Vb"][0]/100} (the red line)')
+    plt.xlabel('No. of frames')
+    plt.ylabel('Estimated Velocity')
+    # plt.title(f'Velocity Frame Wise Comparison {info_dict["filename"][0]}\n pwm value={info_dict[" PWM"][0]} \n Expected_speed: {info_dict[" Vb"][0]/100} (the red line)')
     plt.legend()
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     
-    plt.axhline(y=info_dict[" Vb"][0]/100, color='r', linestyle='-', linewidth=1, label='Expected Speed')
+    # plt.axhline(y=info_dict[" Vb"][0]/100, color='r', linestyle='-', linewidth=1, label='Expected Speed')
     
     plt.tight_layout()
     plt.savefig(f'images/{info_dict["filename"][0]}.png', dpi=300)
-
+    plt.show()
     #Save the box plot
     #Mean_Velocity
 
