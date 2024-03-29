@@ -43,8 +43,7 @@ def read_and_print_dca_file(filename, packet_size):
             last_packet_num=packet_num
             # byte_count=struct.unpack('>Q',b'\x00\x00'+data[4:10][::-1])[0]
             if (packet_num%(1536))==0:
-                print("iske baad se data read chalu karenge")
-                print(packet_num)
+                print("packet_num%(1536))==0", packet_num)
                 break
         
         packet_idx_in_frame=0
@@ -64,7 +63,7 @@ def read_and_print_dca_file(filename, packet_size):
               
                 frame_array[index][packet_idx_in_frame:packet_idx_in_frame+728]= np.frombuffer(data[10:], dtype=np.uint16)
                 packet_idx_in_frame+=728
-                if packet_idx_in_frame==728*1535:
+                if packet_idx_in_frame==728*1536:
                     frame_time_array[index]=timestamp 
                     packet_idx_in_frame=0
                     index+=1
@@ -76,7 +75,7 @@ def read_and_print_dca_file(filename, packet_size):
                 frame_array[index][packet_idx_in_frame:packet_idx_in_frame+728]=np.zeros(728)
                 packet_idx_in_frame+=728
                 last_packet_num=packet_num
-                if packet_idx_in_frame==728*1535:
+                if packet_idx_in_frame==728*1536:
                 # if packet_num%1536==0:
                     frame_time_array[index]=timestamp
                     packet_idx_in_frame=0
@@ -116,8 +115,8 @@ def read_and_print_dca_file(filename, packet_size):
                         j-=1 
                     frame_array[i]=frame_array[j]
         #Now we have a frame array proper of 100*(1456*1536))
-    print("Dirtysum")
-    print(np.sum(dirty_array))
+    # print("Dirtysum")
+    # print(np.sum(dirty_array))
     return frame_array,frame_time_array
 
 def annotate(dca_array,frames):
@@ -131,4 +130,5 @@ def annotate(dca_array,frames):
 
 dca_array,dca_time_array=read_and_print_dca_file(dca_name,1466)
 annotate(dca_array,FRAMES)
-print(dca_array.shape)
+# print(dca_array.shape)cols), dtype=np.uint16)
+    
