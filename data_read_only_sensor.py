@@ -25,7 +25,7 @@ element_size = ADC_PARAMS['bytes']
 def read_and_print_dca_file(filename, packet_size):
     rows = FRAMES
     cols = (728 * 1536)  # (N_bytes_in_packet x N_packets_in_frame) Integer division
-
+    timestamp_infos = []
     # Creating a numpy array of uint16 type, initialized with zeros
     frame_array = np.zeros((rows, cols), dtype=np.uint16)
     frame_time_array=np.zeros(FRAMES,dtype=np.float64)
@@ -37,10 +37,11 @@ def read_and_print_dca_file(filename, packet_size):
             timestamp_data=file.read(8)
             if not timestamp_data:
                 break
-            timestamp=struct.unpack('d',timestamp_data)[0]
+            timestamp=struct.unpack('q',timestamp_data)[0]
             data=file.read(packet_size)
             packet_num=struct.unpack('<1l',data[:4])[0]
             last_packet_num=packet_num
+            print("timestamp", timestamp)
             # byte_count=struct.unpack('>Q',b'\x00\x00'+data[4:10][::-1])[0]
             if (packet_num%(1536))==0:
                 print("packet_num%(1536))==0", packet_num)
@@ -53,7 +54,7 @@ def read_and_print_dca_file(filename, packet_size):
             if not timestamp_data:
                 break
             timestamp=struct.unpack('d',timestamp_data)[0]
-            
+            print("timestamp: ", timestamp)
             data=file.read(packet_size) # The next packet_data
             if not data:
                 break
