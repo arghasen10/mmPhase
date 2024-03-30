@@ -2,5 +2,8 @@ images/
 *.png
 **/*.bin
 **/*.csv
-__pycache__/
+**/__pycache__/
 **/*.pdf
+**/*.npz
+data.json
+**/*.h5

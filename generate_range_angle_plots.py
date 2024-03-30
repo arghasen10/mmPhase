@@ -1,5 +1,6 @@
 from import_all import *
-
+import glob
+import pickle
 
 def read8byte(x):
     return struct.unpack('<hhhh', x)
@@ -142,9 +143,9 @@ def get_args():
     return args
 
 
-def get_info(args):
+def get_info(f):
     dataset=pd.read_csv('dataset.csv')
-    file_name=args.file_name
+    file_name=f
     filtered_row=dataset[dataset['filename']==file_name]
     info_dict={}
     for col in dataset.columns:
@@ -170,11 +171,7 @@ def print_info(info_dict):
 def run_data_read_only_sensor(info_dict):
     command =f'python3 data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    stdout = process.stdout
-    stderr = process.stderr
     print('Data_read_only_sensor.py executed successfully')
-    print(stdout)
-    return stdout
 
 def call_destructor(info_dict):
     file_name="only_sensor"+info_dict["filename"][0]
@@ -185,8 +182,8 @@ def call_destructor(info_dict):
 
     
     
-def collect_ra_heatmap(args):
-    info_dict=get_info(args)
+def collect_ra_heatmap(f):
+    info_dict=get_info(f)
     print_info(info_dict)
     stdout = run_data_read_only_sensor(info_dict)
     # print(stdout)
@@ -216,8 +213,8 @@ def collect_ra_heatmap(args):
     print(info_dict)
     return np.array(collect_range_angle)
 
-def read_imu(args):
-    full_path = "imu_data/"+args.file_name.split(".")[0]+"_imu.bin"
+def read_imu(f):
+    full_path = "imu_data/"+f.split(".")[0]+"_imu.bin"
     imu_datas = []
     timestamps = []
     with open(full_path, 'rb') as file:
@@ -234,9 +231,11 @@ def read_imu(args):
             imu_datas.append(unpacked_data[1:])
     return np.array(timestamps), np.array(imu_datas)
 
+
 if __name__ == '__main__':
-    args=get_args()
-    collect_range_angle = collect_ra_heatmap(args)
-    print(collect_range_angle.shape)
-    timestamps, imudata = read_imu(args)
-    print(timestamps.shape, imudata.shape)
+    for f in glob.glob("*.bin"):
+        print("Filename", f)
+        collect_range_angle = collect_ra_heatmap(f)
+        timestamps, imudata = read_imu(f)
+        file_name = "milliEgo/datasets/"+f.split(".")[0]+".npz"
+        np.savez(file_name, array1=collect_range_angle, array2=imudata)
