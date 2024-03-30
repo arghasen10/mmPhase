@@ -1,3 +1,5 @@
 [submodule "milliEgo"]
 	path = milliEgo
 	url = https://github.com/ChristopherLu/milliEgo.git
+[submodule "milliEgo/"]
+	url = https://github.com/arghasen10/milliEgo.git
