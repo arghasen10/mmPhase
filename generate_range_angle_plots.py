@@ -221,14 +221,17 @@ def read_imu(f):
         # Read and unpack the binary data
         while True:
             # Read 8 bytes for the timestamp and 48 bytes for the IMU data (6 values * 8 bytes each)
-            packed_data = file.read(8 + 48)
+            packed_data = file.read(8)
             if not packed_data:
                 break  # End of file reached
             
             # Unpack the data into a timestamp and IMU data
-            unpacked_data = struct.unpack('d' * 7, packed_data)
-            timestamps.append(unpacked_data[0])
-            imu_datas.append(unpacked_data[1:])
+            timestamp = struct.unpack('q' , packed_data)
+            timestamps.append(timestamp)
+            packed_data = file.read(48)
+            imu_data = struct.unpack('d' * 6 , packed_data)
+            imu_datas.append(imu_data)
+            print(timestamp, imu_data)
     return np.array(timestamps), np.array(imu_datas)
 
 

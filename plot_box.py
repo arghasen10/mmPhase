@@ -28,14 +28,14 @@ for i, d in enumerate(data):
         min_speed_i = i
 
 
-mse_ours_list = [(x*100 - min_speed)**2 for x in data[min_speed_i]["our"]]
-mse_dop_based_list = [(x*100 - min_speed)**2 for x in data[min_speed_i]["dop_based"]]
+mse_ours_list = [(x - min_speed/100)**2 for x in data[min_speed_i]["our"]]
+mse_dop_based_list = [(x - min_speed/100)**2 for x in data[min_speed_i]["dop_based"]]
 
 df2 = pd.DataFrame({"mmPhase": mse_ours_list, "dop_based": mse_dop_based_list, "ground": list(np.ones(len(mse_dop_based_list))*min_speed), "hue": "Low"}) 
 
 print(min_speed, data[min_speed_i]['our'])
-mse_ours_list = [(x*100 - max_speed)**2 for x in data[max_speed_i]["our"]]
-mse_dop_based_list = [(x*100 - max_speed)**2 for x in data[max_speed_i]["dop_based"]]
+mse_ours_list = [(x - max_speed/100)**2 for x in data[max_speed_i]["our"]]
+mse_dop_based_list = [(x - max_speed/100)**2 for x in data[max_speed_i]["dop_based"]]
 # bpl = plt.boxplot(mse_ours_list, positions=np.array(range(len(mse_ours_list)))*2.0-0.4, sym='', widths=0.6)
 
 # bpr = plt.boxplot(mse_dop_based_list, positions=np.array(range(len(mse_dop_based_list)))*2.0+0.4, sym='', widths=0.6)
