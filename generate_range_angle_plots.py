@@ -169,12 +169,13 @@ def print_info(info_dict):
 
 
 def run_data_read_only_sensor(info_dict):
-    command =f'python3 data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
+    filename = 'datasets/'+info_dict["filename"][0]
+    command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     print('Data_read_only_sensor.py executed successfully')
 
 def call_destructor(info_dict):
-    file_name="only_sensor"+info_dict["filename"][0]
+    file_name = 'datasets/only_sensor'+info_dict["filename"][0]
     command =f'rm {file_name}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
@@ -183,11 +184,11 @@ def call_destructor(info_dict):
     
     
 def collect_ra_heatmap(f):
-    info_dict=get_info(f)
+    info_dict=get_info(f.split("/")[-1])
     print_info(info_dict)
     stdout = run_data_read_only_sensor(info_dict)
     # print(stdout)
-    bin_filename='only_sensor'+info_dict['filename'][0]
+    bin_filename = 'datasets/'+info_dict["filename"][0]
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = info_dict[' Nf'][0]
     pointCloudProcessCFG = PointCloudProcessCFG()
@@ -214,7 +215,7 @@ def collect_ra_heatmap(f):
     return np.array(collect_range_angle)
 
 def read_imu(f):
-    full_path = "imu_data/"+f.split(".")[0]+"_imu.bin"
+    full_path = "imu_data/"+f.split("/")[-1].split(".")[0]+"_imu.bin"
     imu_datas = []
     timestamps = []
     with open(full_path, 'rb') as file:
@@ -236,9 +237,9 @@ def read_imu(f):
 
 
 if __name__ == '__main__':
-    for f in glob.glob("*.bin"):
+    for f in glob.glob("datasets/*.bin"):
         print("Filename", f)
         collect_range_angle = collect_ra_heatmap(f)
         timestamps, imudata = read_imu(f)
-        file_name = "milliEgo/datasets/"+f.split(".")[0]+".npz"
+        file_name = "milliEgo/"+f.split(".")[0]+".npz"
         np.savez(file_name, array1=collect_range_angle, array2=imudata)

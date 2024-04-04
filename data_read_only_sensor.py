@@ -8,7 +8,7 @@ FRAMES = 50
 dca_name = sys.argv[1]
 n_frames = int(sys.argv[2])
 
-annotated_fname = "only_sensor"+dca_name
+annotated_fname = dca_name.split("/")[0]+"/only_sensor"+dca_name.split("/")[1]
 FRAMES = n_frames+1
 
 ADC_PARAMS = {'chirps': 128,  # 32
