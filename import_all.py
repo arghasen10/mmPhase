@@ -13,6 +13,7 @@ import argparse
 import pandas as pd
 import cv2
 import subprocess
+import statistics
 from scipy.signal import find_peaks
 plt.rcParams.update({'font.size': 24})
 plt.rcParams["figure.figsize"] = (10, 7)
@@ -23,3 +24,5 @@ all_range_index=[]
 max_doppler_index=[]
 all_doppler_index=[]
 velocity_array=[]
+overlapped_range_bins = []
+mode_velocities = []
