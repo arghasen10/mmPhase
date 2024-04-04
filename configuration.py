@@ -3,16 +3,14 @@ import numpy as np
 NUM_TX = 3 # tx order tx0,tx2,tx1, face to the board (left,right,upper) 
 NUM_RX = 4
 
-Tp=14e-6
-Tc=72*1e-6
- 
-
 START_FREQ = 77 
 ADC_START_TIME = 6 
 FREQ_SLOPE = 60.012
 ADC_SAMPLES = 256 # data samples per chirp
 SAMPLE_RATE = 4400
 RX_GAIN = 30 
+Tp = 14e-6
+Tc = 72e-6
 
 IDLE_TIME = 7
 RAMP_END_TIME = 65

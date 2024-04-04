@@ -245,6 +245,7 @@ def custom_color_map():
     return custom_cmap
 def iterative_range_bins_detection(rangeResult,pointcloud_processcfg):
     global max_range_index,all_range_index
+    global overlapped_range_bins
     if pointcloud_processcfg.enableStaticClutterRemoval:
         rangeResult = clutter_removal(rangeResult, axis=2)
     
@@ -270,16 +271,18 @@ def iterative_range_bins_detection(rangeResult,pointcloud_processcfg):
     
     range_abs_combined_nparray_collapsed=np.sum(range_abs_combined_nparray,axis=0)/pointcloud_processcfg.frameConfig.numLoopsPerFrame
     peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
-    
-    peaks_min_intensity_threshold=[]
-    #decide toh karlo if it is a meningful maxima
-    for indices in peaks:
-        if range_abs_combined_nparray_collapsed[indices]>100:
-            peaks_min_intensity_threshold.append(indices)
+    peaks_min_intensity_threshold = np.argsort(range_abs_combined_nparray_collapsed)[::-1][:5]
+    # peaks_min_intensity_threshold=[]
+    # #decide toh karlo if it is a meningful maxima
+    # for indices in peaks:
+    #     if range_abs_combined_nparray_collapsed[indices]>100:
+    #         peaks_min_intensity_threshold.append(indices)
 # peaks will be an array of indices of the local maxima
+    print(f"Max = {np.argmax(range_abs_combined_nparray_collapsed)}")
     max_range_index.append(np.argmax(range_abs_combined_nparray_collapsed))
     all_range_index.append(peaks_min_intensity_threshold)
     return peaks_min_intensity_threshold
+
 def iterative_doppler_bins_selection(dopplerResult,pointcloud_processcfg,range_peaks):
     global max_doppler_index,all_doppler_index
     #our aim is accurate range bins detection ( few of them will be actual object
@@ -307,6 +310,8 @@ def iterative_doppler_bins_selection(dopplerResult,pointcloud_processcfg,range_p
     max_doppler_index.append(np.argmax(doppler_abs_combined_nparray[:,max_range_index[-1]])-91)
     all_doppler_index.append(vel_idx)
     return vel_idx
+
+
 def get_phase(r,i):
     if r==0:
         if i>0:
@@ -324,6 +329,7 @@ def get_phase(r,i):
         else:
             phase=np.pi + np.arctan(i/r)
     return phase
+
 def solve_equation(phase_cur_frame,info_dict):
     phase_diff=[]
     for soham in range (1,len(phase_cur_frame)):
@@ -352,32 +358,33 @@ def solve_equation(phase_cur_frame,info_dict):
         if root >0.9*median_root and root<1.1*median_root:
             final_roots.append(root)
     return np.mean(final_roots)
+
+
 def plot_dopppler_mobicom(doppler_vel_frame_wise,mobicom_vel_frame_wise,info_dict):
     print(doppler_vel_frame_wise)
     print(mobicom_vel_frame_wise)
     for i,ele in enumerate(doppler_vel_frame_wise):
         doppler_vel_frame_wise[i]=doppler_vel_frame_wise[i]*-1
     plt.figure(figsize=(10, 6))
-    plt.plot(doppler_vel_frame_wise, label='$V_{dop}$', marker='o', markersize=5, linestyle='-', linewidth=1, alpha=0.7)
-    plt.plot(mobicom_vel_frame_wise, label='$mmPhase$', marker='x', linestyle='--', linewidth=1, alpha=0.7)
-    plt.ylim(-0.5, 0.5)  # Setting y-axis limit
-    plt.xlabel('No. of frames')
-    plt.ylabel('Estimated Velocity')
-    # plt.title(f'Velocity Frame Wise Comparison {info_dict["filename"][0]}\n pwm value={info_dict[" PWM"][0]} \n Expected_speed: {info_dict[" Vb"][0]/100} (the red line)')
+    # plt.plot(doppler_vel_frame_wise, label='Doppler Velocity', marker='o', markersize=5, linestyle='-', linewidth=1, alpha=0.7)
+    plt.plot(mobicom_vel_frame_wise, label='MobiCom Velocity', marker='x', linestyle='--', linewidth=1, alpha=0.7)
+    plt.plot(mode_velocities, label="Mode Mobicom velocity", marker="*", linestyle="-.", linewidth=1, alpha=0.7)
+    # plt.ylim(-0.5, 0.5)  # Setting y-axis limit
+    plt.xlabel('Frame')
+    plt.ylabel('Velocity')
+    plt.title(f'Velocity Frame Wise Comparison {info_dict["filename"][0]}\n pwm value={info_dict[" PWM"][0]} \n Expected_speed: {info_dict[" Vb"][0]/100} (the red line)')
     plt.legend()
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     
-    # plt.axhline(y=info_dict[" Vb"][0]/100, color='r', linestyle='-', linewidth=1, label='Expected Speed')
+    plt.axhline(y=info_dict[" Vb"][0]/100, color='r', linestyle='-', linewidth=1, label='Expected Speed')
     
     plt.tight_layout()
     plt.savefig(f'images/{info_dict["filename"][0]}.png', dpi=300)
-    plt.show()
+
     #Save the box plot
     #Mean_Velocity
 
     actual_mean_velocity_from_mobicom=np.mean(mobicom_vel_frame_wise)
-
-
     # plt.show()
 def plot_range(max_range_index,info_dict):
     plt.figure(figsize=(10, 6))
@@ -401,6 +408,7 @@ def get_velocity_antennawise(range_FFT_,peak,info_dict):
         phase_cur_frame=phase_unwrapping(len(phase_per_antenna),phase_per_antenna)
         cur_vel=solve_equation(phase_cur_frame,info_dict)
         return cur_vel
+
 def get_velocity(rangeResult,range_peaks,info_dict):
     global velocity_array
     vel_array_frame=[]
@@ -411,12 +419,11 @@ def get_velocity(rangeResult,range_peaks,info_dict):
                 cur_velocity=get_velocity_antennawise(rangeResult[i][j],peak,info_dict)
                 vel_arr_all_ant.append(cur_velocity)
         vel_array_frame.append((peak,vel_arr_all_ant))
+    print(f"Vel_array_frame shape : {len(vel_array_frame)}")
     velocity_array.append(vel_array_frame)
     pass
-
-
 def run_data_read_only_sensor(info_dict):
-    command =f'python3 data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
+    command =f'python data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
@@ -427,10 +434,13 @@ def call_destructor(info_dict):
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
+
 def get_mae(true_vel,doppler_vel,mobicom_vel,info_dict):
     doppler_mae=0
     mobicom_mae=0
-    for i in range(len(doppler_vel)):
+    print(f"Doppler vel length = {len(doppler_vel)}")
+    print(f"Mobicom vel length = {len(mobicom_vel)}")
+    for i in range(len(mobicom_vel)):
         doppler_mae+=np.abs(true_vel/100-doppler_vel[i])
         mobicom_mae+=np.abs(true_vel/100-mobicom_vel[i])
     doppler_mae/=len(doppler_vel)
@@ -444,23 +454,27 @@ def get_mae(true_vel,doppler_vel,mobicom_vel,info_dict):
     true_vel=np.mean(mobicom_vel)
     doppler_mae_array=[]
     mobicom_mae_array=[]
-    for i in range(len(doppler_vel)):
+    mode_mobicom_mae_array = []
+    for i in range(len(mobicom_vel)):
         doppler_mae_array.append(np.abs(true_vel-doppler_vel[i]))
         mobicom_mae_array.append(np.abs(true_vel-mobicom_vel[i]))
+        mode_mobicom_mae_array.append(np.abs(true_vel-mode_velocities[i]))
+
     fig, ax = plt.subplots()
 
 # Creating box plots for each array
     box1 = ax.boxplot(doppler_mae_array, positions=[1], widths=0.6, patch_artist=True,medianprops=dict(color="none"),showfliers=False)
     box2 = ax.boxplot(mobicom_mae_array, positions=[2], widths=0.6, patch_artist=True,medianprops=dict(color="none"),showfliers=False)
+    box3 = ax.boxplot(mode_mobicom_mae_array, positions=[3], widths=0.6, patch_artist=True,medianprops=dict(color="none"),showfliers=False)
 
     # Adding labels and title
-    ax.set_xticks([1, 2])
-    ax.set_xticklabels(['Doppler', 'Mobicom Velocity'])
-    ax.set_title('Box Plot of Two Arrays')
+    ax.set_xticks([1, 2, 3])
+    ax.set_xticklabels(['Doppler', 'Mobicom', 'Mode-mobicom'])
+    ax.set_title('Box Plot')
 
     # Adding colors
-    colors = ['lightblue', 'lightgreen']
-    for box, color in zip([box1, box2], colors):
+    colors = ['lightblue', 'lightgreen', 'pink']
+    for box, color in zip([box1, box2, box3], colors):
         for patch in box['boxes']:
             patch.set_facecolor(color)
 
@@ -469,7 +483,33 @@ def get_mae(true_vel,doppler_vel,mobicom_vel,info_dict):
     plt.grid(True)
     plt.savefig('box_plot.png')
 
-    
+def plot_phase_heatmap(rangeResult, range_peaks):
+    plt.clf()
+    phase_heatmap = np.ones((182,256))*10
+    for peak in range_peaks:
+        phase_per_antenna=[]
+        for k in range(0,cfg.LOOPS_PER_FRAME):
+            r = rangeResult[0][0][k][peak].real
+            i = rangeResult[0][0][k][peak].imag
+            phase=get_phase(r,i)
+            phase_per_antenna.append(phase)
+        phase_cur_frame=phase_unwrapping(len(phase_per_antenna),phase_per_antenna)
+        for i in range(0, 182):
+            phase_heatmap[i][peak] = phase_per_antenna[i]
+    sns.heatmap(phase_heatmap)
+    plt.show()
+
+def get_mode_velocity(velocity_array_framewise):
+    global mode_velocities
+    vel_array_all = []
+    for range_bin, velocity_all_antennas in velocity_array_framewise:
+        for velocity in velocity_all_antennas:
+            vel_array_all.append(velocity)
+    # sns.kdeplot(vel_array_all, shade=True)
+    # plt.show()
+    vel_mode = statistics.mode(vel_array_all)
+    print(f"Mode vel = {vel_mode}")
+    return vel_mode
     
 def main():
     args=get_args()
@@ -481,22 +521,47 @@ def main():
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = info_dict[' Nf'][0]
     pointCloudProcessCFG = PointCloudProcessCFG()
+    prev_range_bins = []
     for frame_no in tqdm(range(total_frame_number)):
         bin_frame = bin_reader.getNextFrame(pointCloudProcessCFG.frameConfig)
         np_frame = bin2np_frame(bin_frame)
         frameConfig = pointCloudProcessCFG.frameConfig
         reshapedFrame = frameReshape(np_frame, frameConfig)
         rangeResult = rangeFFT(reshapedFrame, frameConfig)
-        
         range_bins=iterative_range_bins_detection(rangeResult,pointCloudProcessCFG)
-        # print(f'Your possible range bins for the frame no {frame_no} is')
-        # print(range_bins)
+        print(f"Frame : {frame_no}")
+        print(f'Current raw range bins: {range_bins}')
+        print(f'Previous raw range bins: {prev_range_bins}')
+        # if frame_no==10:
+        #     plot_phase_heatmap(rangeResult, range_bins)
+        if frame_no < 5:
+            overlapped_range_bins.append(range_bins)
+            prev_range_bins = range_bins
+        else:
+            last_frame_idx = len(overlapped_range_bins)
+            curr_ranges = set()
+            for prev_range_bin in prev_range_bins:
+                for cur_range_bin in range_bins:
+                    # print(f" Prev, Curr: {prev_range_bin, cur_range_bin}")
+                    if abs(prev_range_bin - cur_range_bin) <= 5:
+                        #if within +/- 3, then keep the range bins 
+                        curr_ranges.add(cur_range_bin)
+            prev_range_bins = range_bins
+            overlapped_range_bins.append(np.array(list(curr_ranges)))
+            range_bins = overlapped_range_bins[-1]
+
+        print(f'Overlapped range bins = {range_bins}')
+
         dopplerResult = dopplerFFT(rangeResult, frameConfig)
         doppler_bins=iterative_doppler_bins_selection(dopplerResult,pointCloudProcessCFG,range_bins)
-        # print(f'Your possible velocity bins for the frame no {frame_no} is')
-        # print(doppler_bins)
          
         get_velocity(rangeResult,range_bins,info_dict)
+
+        #Okay so for each frame a list of velocities gets appened corresponding to each range bin
+        #Each range bin has a list of velocities for each antenna
+        # print(f"Velocity array: {velocity_array[-1]}")
+        mode_velocities.append(get_mode_velocity(velocity_array[-1]))
+
     bin_reader.close()  
     call_destructor(info_dict)
     return info_dict
