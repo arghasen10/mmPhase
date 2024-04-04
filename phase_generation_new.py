@@ -423,13 +423,14 @@ def get_velocity(rangeResult,range_peaks,info_dict):
     velocity_array.append(vel_array_frame)
     pass
 def run_data_read_only_sensor(info_dict):
-    command =f'python data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
+    filename = 'datasets/'+info_dict["filename"][0]
+    command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
     print('Data_read_only_sensor.py executed successfully')
 def call_destructor(info_dict):
-    file_name="only_sensor"+info_dict["filename"][0]
+    file_name="datasets/only_sensor"+info_dict["filename"][0]
     command =f'rm {file_name}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
