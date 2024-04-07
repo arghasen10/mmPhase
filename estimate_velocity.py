@@ -355,8 +355,6 @@ def solve_equation(phase_cur_frame,info_dict):
             final_roots.append(root)
     return np.mean(final_roots)
 def plot_dopppler_mobicom(doppler_vel_frame_wise,mobicom_vel_frame_wise,info_dict):
-    print(doppler_vel_frame_wise)
-    print(mobicom_vel_frame_wise)
     for i,ele in enumerate(doppler_vel_frame_wise):
         doppler_vel_frame_wise[i]=doppler_vel_frame_wise[i]*-1
     plt.figure(figsize=(10, 6))
@@ -410,13 +408,14 @@ def get_velocity(rangeResult,range_peaks,info_dict):
 
 
 def run_data_read_only_sensor(info_dict):
-    command =f'python3 data_read_only_sensor.py {info_dict["filename"][0]} {info_dict[" Nf"][0]}'
+    filename = 'datasets/'+info_dict["filename"][0]
+    command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
     print('Data_read_only_sensor.py executed successfully')
 def call_destructor(info_dict):
-    file_name="only_sensor"+info_dict["filename"][0]
+    file_name = 'datasets/only_sensor'+info_dict["filename"][0]
     command =f'rm {file_name}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
@@ -472,18 +471,18 @@ def majorityElement(nums):
     
 def main():
     dict_list = []
-    files = glob.glob("*.bin")
+    files = glob.glob("datasets/*.bin")
     for f in files:
         try:
-            vicon_filename = glob.glob("ground_truth/*.csv")[[int(e.split("_")[5]) for e in glob.glob("ground_truth/*.csv")].index(int(f.split("_")[-1].split(".")[0]))] 
+            vicon_filename = glob.glob("ground_truth/*.csv")[[int(e.split("_")[5]) for e in glob.glob("ground_truth/*.csv")].index(int(f.split("/")[-1].split("_")[-1].split(".")[0]))] 
         except ValueError as e:
-            print(e)
+            print("Some error occured : ", e)
             continue
         print(vicon_filename)
-        info_dict=get_info(f)
+        info_dict=get_info(f.split("/")[-1])
         print_info(info_dict)
         run_data_read_only_sensor(info_dict)
-        bin_filename='only_sensor'+info_dict['filename'][0]
+        bin_filename='datasets/only_sensor'+info_dict['filename'][0]
         bin_reader = RawDataReader(bin_filename)
         total_frame_number = info_dict[' Nf'][0]
         pointCloudProcessCFG = PointCloudProcessCFG()
@@ -513,8 +512,10 @@ def main():
                 if ele[0]==r:
                     mobicom_vel_frame_wise.append(np.mean(np.array(ele[1])))
         
-        gt_speed = list(get_gt_velocity(vicon_filename).values)
+        gt_speed = get_gt_velocity(vicon_filename).values
+        gt_speed = list(gt_speed)
         gt_speed_final = majorityElement(gt_speed)
+        print("gt_speed_final: ", gt_speed_final)
         data_dict = {'filename': f, 'dop_based': doppler_vel_frame_wise, 'our': mobicom_vel_frame_wise, 'vicon_gt': gt_speed, 'vicon_gt_final': gt_speed_final}
         dict_list.append(data_dict)
     with open('data.json', 'w') as file:
@@ -525,4 +526,4 @@ def main():
 if __name__ == '__main__':
     t1=time.time()
     info_dict=main()
-    print(time.time()-t1)
+    # print(time.time()-t1)

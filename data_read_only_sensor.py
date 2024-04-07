@@ -41,7 +41,6 @@ def read_and_print_dca_file(filename, packet_size):
             data=file.read(packet_size)
             packet_num=struct.unpack('<1l',data[:4])[0]
             last_packet_num=packet_num
-            print("timestamp", timestamp)
             # byte_count=struct.unpack('>Q',b'\x00\x00'+data[4:10][::-1])[0]
             if (packet_num%(1536))==0:
                 print("packet_num%(1536))==0", packet_num)
@@ -53,8 +52,8 @@ def read_and_print_dca_file(filename, packet_size):
             timestamp_data=file.read(8)
             if not timestamp_data:
                 break
-            timestamp=struct.unpack('d',timestamp_data)[0]
-            print("timestamp: ", timestamp)
+            timestamp=struct.unpack('q',timestamp_data)[0]
+            # print("timestamp: ", timestamp)
             data=file.read(packet_size) # The next packet_data
             if not data:
                 break
@@ -129,7 +128,20 @@ def annotate(dca_array,frames):
         annotation_file.write(dca_array[i])
     annotation_file.close()
 
+
+def annotate_time_stamp(dca_time_array,frames):
+    annotated_fname = "time_stamps/time"+dca_name.split("/")[1]
+    if os.path.exists(annotated_fname):
+        os.remove(annotated_fname)
+    annotation_file = open(annotated_fname, "ab")
+    for i in range (frames):
+        annotation_file.write(dca_time_array[i])
+    annotation_file.close()
+
+
+
 dca_array,dca_time_array=read_and_print_dca_file(dca_name,1466)
 annotate(dca_array,FRAMES)
+annotate_time_stamp(dca_time_array, FRAMES)
 # print(dca_array.shape)cols), dtype=np.uint16)
     

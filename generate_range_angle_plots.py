@@ -172,6 +172,7 @@ def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
     command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    print(process.stdout)
     print('Data_read_only_sensor.py executed successfully')
 
 def call_destructor(info_dict):
@@ -227,19 +228,37 @@ def read_imu(f):
                 break  # End of file reached
             
             # Unpack the data into a timestamp and IMU data
-            timestamp = struct.unpack('q' , packed_data)
+            timestamp = struct.unpack('d' , packed_data)
             timestamps.append(timestamp)
             packed_data = file.read(48)
             imu_data = struct.unpack('d' * 6 , packed_data)
             imu_datas.append(imu_data)
-            print(timestamp, imu_data)
     return np.array(timestamps), np.array(imu_datas)
 
 
+def read_sensor_timestamp(f):
+    full_path = "time_stamps/time"+f.split("/")[-1].split(".")[0]+".bin"
+    timestamps = []
+    with open(full_path, 'rb') as file:
+        # Read and unpack the binary data
+        while True:
+            # Read 8 bytes for the timestamp and 48 bytes for the IMU data (6 values * 8 bytes each)
+            packed_data = file.read(8)
+            if not packed_data:
+                break  # End of file reached
+            
+            # Unpack the data into a timestamp and IMU data
+            timestamp = struct.unpack('d' , packed_data)
+            timestamps.append(timestamp)
+    print("Sensor timestamps: ", timestamps)
+    return np.array(timestamps)
+
 if __name__ == '__main__':
     for f in glob.glob("datasets/*.bin"):
-        print("Filename", f)
         collect_range_angle = collect_ra_heatmap(f)
-        timestamps, imudata = read_imu(f)
-        file_name = "milliEgo/"+f.split(".")[0]+".npz"
-        np.savez(file_name, array1=collect_range_angle, array2=imudata)
+        imu_timestamps, imudata = read_imu(f)
+        file_name = "milliEgo/"+f.split(".")[0]+".pickle"
+        sensor_timestamps = read_sensor_timestamp(f)
+        arrays = [collect_range_angle, imudata, sensor_timestamps, imu_timestamps]
+        with open(file_name, 'wb') as f:
+            pickle.dump(arrays, f)  
