@@ -206,7 +206,7 @@ def get_args():
     return args
 def get_info(args):
     dataset=pd.read_csv('dataset.csv')
-    file_name=args.file_name
+    file_name=args
     filtered_row=dataset[dataset['filename']==file_name]
     info_dict={}
     for col in dataset.columns:
@@ -514,11 +514,11 @@ def get_mode_velocity(velocity_array_framewise):
     
 def main():
     args=get_args()
-    print(args.file_name)
-    info_dict=get_info(args)
+    print(args)
+    info_dict=get_info(args.file_name.split("/")[-1])
     print_info(info_dict)
     run_data_read_only_sensor(info_dict)
-    bin_filename='only_sensor'+info_dict['filename'][0]
+    bin_filename='datasets/only_sensor'+info_dict['filename'][0]
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = info_dict[' Nf'][0]
     pointCloudProcessCFG = PointCloudProcessCFG()
