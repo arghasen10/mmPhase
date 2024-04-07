@@ -7,3 +7,4 @@ images/
 **/*.npz
 data.json
 **/*.h5
+imuerror.json

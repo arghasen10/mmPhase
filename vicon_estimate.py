@@ -100,7 +100,6 @@ def get_gt_velocity(filename):
         if prev == None:
             prev = vicon_data[e]
             continue
-        print(f'frame no: {e}', end=' ')
         for i in vicon_data[e]:
             for p in prev:
                 if p.__rshift__(i) < 10:
@@ -119,11 +118,6 @@ def get_gt_velocity(filename):
                         ids[counter].append(i)
                         counter+=1
         prev = vicon_data[e]
-        print('')
-
-    for id in ids.keys():
-        print(len(ids[id]))
-
 
 
     fig = plt.figure(figsize=(12, 12))
