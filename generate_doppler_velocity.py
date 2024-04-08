@@ -51,14 +51,11 @@ def extract_res(file_name):
         dopplerResult = dopplerFFT(rangeResult, frameConfig)
         max_doppler_index, doppler_bins = iterative_doppler_bins_selection(dopplerResult,pointCloudProcessCFG,range_bins, max_range_index)
         max_doppler_indices.append(max_doppler_index)
-        vel_array_frame = np.array(get_velocity(rangeResult,range_bins,info_dict)).flatten()
-        velocity_array.append(vel_array_frame)
-        mode_velocities.append(st.mode(vel_array_frame)[0])
-        mean_velocities.append(vel_array_frame.mean())
+        doppler_velocity = max_doppler_index*0.0343
+        velocity_array.append(doppler_velocity)
     bin_reader.close()  
     call_destructor(info_dict)
-    estimated_speed = [item for sublist in velocity_array for item in sublist]
-    return estimated_speed, mean_velocities, mode_velocities
+    return velocity_array
 
 
 if __name__ == "__main__":
@@ -67,9 +64,9 @@ if __name__ == "__main__":
     dict_list = []
     files = glob.glob("datasets/*.bin")
     for f in files:
-        estimated_speed, mean_velocities, mode_velocities = extract_res(f)
-        dict_list.append({'filename': f, 'estimated_speed': mean_velocities})
+        velocity_array = extract_res(f)
+        dict_list.append({'filename': f, 'estimated_speed': velocity_array})
     
-    with open('estimated_speed_mmPhase.json', 'w') as file:
+    with open('estimated_speed_doppler.json', 'w') as file:
         json.dump(dict_list, file)
     
