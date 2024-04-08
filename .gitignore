@@ -8,3 +8,6 @@ images/
 data.json
 **/*.h5
 imuerror.json
+gt_speed.json
+imuestimate.json
+estimated_speed_mmPhase.json
