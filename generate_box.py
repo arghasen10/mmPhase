@@ -1,7 +1,10 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+from seaborn import color_palette
 
+colors = color_palette(n_colors=10)
 plt.rcParams.update({'font.size': 28})
 plt.rcParams["figure.figsize"] = (10, 7)
 plt.rcParams["font.weight"] = "bold"
@@ -70,9 +73,9 @@ split_idx1 = len(pwms) // 3
 split_idx2 = split_idx1 * 2
 
 # Split the array into 3 groups
-group1 = pwms[:split_idx1]
-group2 = pwms[split_idx1:split_idx2]
-group3 = pwms[split_idx2:]
+group1 = pwms[:(split_idx1-4)]
+group2 = pwms[(split_idx1+4):(split_idx2-4)]
+group3 = pwms[(split_idx2+4):]
 for f in list(captured_data.keys()):
     pwm_val = int(f.split('.')[-2].split('_')[-1])
     if pwm_val in group1:
@@ -120,7 +123,7 @@ for l in high_vel_files:
         if key == 'gt':
             continue
         if key == 'imu':
-            abs_diff = abs_diff *0.02
+            abs_diff = abs_diff*0.02
         if key == 'milliego':
             abs_diff = abs_diff*0.01
         if key not in high_res:
@@ -150,10 +153,11 @@ p1 = plt.boxplot(low_data, positions=[2,7,12,17], widths=0.6, showfliers=False, 
 set_box_color(p1, 'tab:blue')
 p2 = plt.boxplot(mid_data, positions=[3,8,13,18], widths=0.6, showfliers=False, patch_artist=True, labels=['mmPhase', 'Doppler', 'IMU', 'Pretrained\nmilliEgo'])
 set_box_color(p2, 'tab:orange')
-p3 = plt.boxplot(mid_data, positions=[4,9,14,19], widths=0.6, showfliers=False, patch_artist=True, labels=['mmPhase', 'Doppler', 'IMU', 'Pretrained\nmilliEgo'])
+p3 = plt.boxplot(high_data, positions=[4,9,14,19], widths=0.6, showfliers=False, patch_artist=True, labels=['mmPhase', 'Doppler', 'IMU', 'Pretrained\nmilliEgo'])
 set_box_color(p3, 'tab:green')
 
-plt.legend(['Low', 'Medium', 'High'], ncols=4, fontsize=24)
+plt.legend(handles=[Patch(facecolor=colors[i],label=g,edgecolor='k',linewidth=0.5) for i,g in enumerate(['Low', 'Mid', 'High'])],
+          ncols=3,frameon=False,loc='upper left',fontsize=26)
 plt.xticks([3, 8, 13, 18], ticks,rotation=15)
 plt.grid(axis='y')
 ax = plt.gca()
@@ -161,9 +165,9 @@ leg = ax.get_legend()
 leg.legendHandles[0].set_color('tab:blue')
 leg.legendHandles[1].set_color('tab:orange')
 leg.legendHandles[2].set_color('tab:green')
-plt.yticks([0,0.2,0.4,0.6])
-plt.ylabel('MAE')
+plt.yticks([0,0.2, 0.4, 0.6])
+plt.ylabel('MAE (m/s)')
 plt.tight_layout()
-plt.ylim([0,0.6])
-# plt.show()
+plt.ylim([0,0.8])
 plt.savefig('box_mae.pdf')
+plt.show()
