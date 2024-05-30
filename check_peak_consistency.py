@@ -51,3 +51,6 @@ for file_name in bin_files:
         print("File:", file_name, "is consistent.")
     else:
         print("File:", file_name, "is inconsistent.")
+
+
+
