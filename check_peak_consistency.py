@@ -1,3 +1,4 @@
+import numpy as np
 from os import listdir
 from os.path import isfile, join
 from helper import *
@@ -11,15 +12,13 @@ def check_consistency_of_frames(all_range_index, threshold):
     for i in range(len(all_range_index) - 1):
         current_peaks = all_range_index[i]
         next_peaks = all_range_index[i + 1]
-        # print("Current:", current_peaks)
-        # print("Next:", next_peaks)
         if not (any(abs(c - n) <= threshold for n in next_peaks) for c in current_peaks):
             return False
     return True
 
-
 # List to store names of files with inconsistent data
 inconsistent_files = []
+
 # Process each file
 for file_name in bin_files:
     print("Processing file ", file_name)
@@ -41,10 +40,16 @@ for file_name in bin_files:
         reshapedFrame = frameReshape(np_frame, frameConfig)
         rangeResult = rangeFFT(reshapedFrame, frameConfig)
         rangeResult = np.abs(rangeResult)
-
+        
         # Find peaks in the current frame's range data
         peaks_min_intensity_threshold = find_peaks_in_range_data(rangeResult, pointCloudProcessCFG)
         
+        # Calculate velocity
+        velocities = []
+        velocity = get_velocity(rangeResult, peaks_min_intensity_threshold, info_dict)
+        velocities.append(velocity)
+        print("Velocities for frame {}: {}".format(frame_no, velocities))
+
         # Store the maximum peak and all detected peaks
         max_range_index.append(np.argmax(np.sum(rangeResult, axis=0) / frameConfig.numLoopsPerFrame))
         all_range_index.append(peaks_min_intensity_threshold)
