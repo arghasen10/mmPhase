@@ -409,6 +409,36 @@ def get_velocity(rangeResult,range_peaks,info_dict):
         vel_array_frame.append(vel_arr_all_ant)
     return vel_array_frame
 
+# Function to normalize and find peaks in range data
+def find_peaks_in_range_data(rangeResult, pointcloud_processcfg):
+    range_result_absnormal_split = []
+    for i in range(pointcloud_processcfg.frameConfig.numTxAntennas):
+        for j in range(pointcloud_processcfg.frameConfig.numRxAntennas):
+            r_r = np.abs(rangeResult[i][j])
+            r_r[:,0:10] = 0
+            min_val = np.min(r_r)
+            max_val = np.max(r_r)
+            r_r_normalise = (r_r - min_val) / (max_val - min_val) * 1000
+            range_result_absnormal_split.append(r_r_normalise)
+    
+    # Combine and average the normalized range data
+    range_abs_combined_nparray = np.zeros((pointcloud_processcfg.frameConfig.numLoopsPerFrame, pointcloud_processcfg.frameConfig.numADCSamples))
+    for ele in range_result_absnormal_split:
+        range_abs_combined_nparray += ele
+    range_abs_combined_nparray /= (pointcloud_processcfg.frameConfig.numTxAntennas * pointcloud_processcfg.frameConfig.numRxAntennas)
+    
+    # Collapse range data and find peaks
+    range_abs_combined_nparray_collapsed = np.sum(range_abs_combined_nparray, axis=0) / pointcloud_processcfg.frameConfig.numLoopsPerFrame
+    peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
+    
+    # Filter peaks by intensity threshold
+    peaks_min_intensity_threshold = []
+    for indices in peaks:
+        if range_abs_combined_nparray_collapsed[indices] > 50:
+            peaks_min_intensity_threshold.append(indices)
+    
+    return peaks_min_intensity_threshold
+
 
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
