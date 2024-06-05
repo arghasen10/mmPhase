@@ -327,7 +327,7 @@ def get_phase(r,i):
 
 def solve_equation(phase_cur_frame,info_dict):
     phase_diff=[]
-    for soham in range (1,len(phase_cur_frame)):
+    for i in range (1,len(phase_cur_frame)):
         phase_diff.append(phase_cur_frame[soham]-phase_cur_frame[soham-1])
     Tp=cfg.Tp
     Tc=cfg.Tc
@@ -384,6 +384,35 @@ def plot_range(max_range_index,info_dict):
     plt.tight_layout()
     plt.savefig('brightest_range.png')
 
+# def get_velocity_antennawise(range_FFT_, peak, info_dict):
+#     phase_per_antenna = []
+#     vel_peak = []
+    
+#     print("Initial Variables:")
+#     print("range_FFT_:", range_FFT_)
+#     print("peak:", peak)
+#     print("info_dict:", info_dict)
+    
+#     for k in range(cfg.LOOPS_PER_FRAME):
+#         r = range_FFT_[k][peak].real
+#         i = range_FFT_[k][peak].imag
+#         print(f"Iteration {k}:")
+#         print("r (real part):", r)
+#         print("i (imaginary part):", i)
+        
+#         phase = get_phase(r, i)
+#         print("phase:", phase)
+        
+#         phase_per_antenna.append(phase)
+#         print("phase_per_antenna so far:", phase_per_antenna)
+    
+#     phase_cur_frame = phase_unwrapping(len(phase_per_antenna), phase_per_antenna)
+#     print("phase_cur_frame:", phase_cur_frame)
+    
+#     cur_vel = solve_equation(phase_cur_frame, info_dict)
+#     print("cur_vel:", cur_vel)
+    
+#     return cur_vel
 
 def get_velocity_antennawise(range_FFT_,peak,info_dict):
         phase_per_antenna=[]
@@ -409,8 +438,8 @@ def get_velocity(rangeResult,range_peaks,info_dict):
         vel_array_frame.append(vel_arr_all_ant)
     return vel_array_frame
 
-# Function to normalize and find peaks in range data
-def find_peaks_in_range_data(rangeResult, pointcloud_processcfg):
+
+def find_peaks_in_range_data(rangeResult, pointcloud_processcfg, intensity_threshold):
     range_result_absnormal_split = []
     for i in range(pointcloud_processcfg.frameConfig.numTxAntennas):
         for j in range(pointcloud_processcfg.frameConfig.numRxAntennas):
@@ -420,25 +449,30 @@ def find_peaks_in_range_data(rangeResult, pointcloud_processcfg):
             max_val = np.max(r_r)
             r_r_normalise = (r_r - min_val) / (max_val - min_val) * 1000
             range_result_absnormal_split.append(r_r_normalise)
-    
-    # Combine and average the normalized range data
+
     range_abs_combined_nparray = np.zeros((pointcloud_processcfg.frameConfig.numLoopsPerFrame, pointcloud_processcfg.frameConfig.numADCSamples))
     for ele in range_result_absnormal_split:
         range_abs_combined_nparray += ele
     range_abs_combined_nparray /= (pointcloud_processcfg.frameConfig.numTxAntennas * pointcloud_processcfg.frameConfig.numRxAntennas)
     
-    # Collapse range data and find peaks
     range_abs_combined_nparray_collapsed = np.sum(range_abs_combined_nparray, axis=0) / pointcloud_processcfg.frameConfig.numLoopsPerFrame
     peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
-    
-    # Filter peaks by intensity threshold
+
     peaks_min_intensity_threshold = []
     for indices in peaks:
-        if range_abs_combined_nparray_collapsed[indices] > 50:
+        if range_abs_combined_nparray_collapsed[indices] > intensity_threshold:
             peaks_min_intensity_threshold.append(indices)
     
     return peaks_min_intensity_threshold
 
+def check_consistency_of_frame(current_peaks, next_peaks, threshold):
+    if not any(any(abs(c - n) <= threshold for n in next_peaks) for c in current_peaks):
+        return False
+    return True
+
+def get_consistent_peaks(current_peaks, next_peaks, threshold):
+    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-n) <= threshold for n in next_peaks) for c in current_peaks) if val]
+    return consistent_peaks
 
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
