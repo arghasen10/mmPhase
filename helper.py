@@ -328,7 +328,7 @@ def get_phase(r,i):
 def solve_equation(phase_cur_frame,info_dict):
     phase_diff=[]
     for i in range (1,len(phase_cur_frame)):
-        phase_diff.append(phase_cur_frame[soham]-phase_cur_frame[soham-1])
+        phase_diff.append(phase_cur_frame[i]-phase_cur_frame[i-1])
     Tp=cfg.Tp
     Tc=cfg.Tc
     L=info_dict[' L'][0]/100

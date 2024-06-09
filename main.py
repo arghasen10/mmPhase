@@ -1,5 +1,4 @@
 from helper import *
-import tqdm
 
 file_name = "datasets/2024-03-03_Pilot_1A_10.bin"
 
