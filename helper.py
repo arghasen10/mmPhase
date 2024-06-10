@@ -3,12 +3,14 @@ import numpy as np
 import configuration as cfg
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
+import tensorflow as tf
 import seaborn as sns
 import argparse
 import pandas as pd
 import subprocess
 import statistics
 from scipy.signal import find_peaks
+from sklearn.model_selection import train_test_split
 plt.rcParams.update({'font.size': 24})
 plt.rcParams["figure.figsize"] = (10, 7)
 plt.rcParams["font.weight"] = "bold"
@@ -525,3 +527,137 @@ def get_mode_velocity(velocity_array_framewise):
             vel_array_all.append(velocity)
     vel_mode = statistics.mode(vel_array_all)
     return vel_mode
+
+# Neural Network Implementation
+
+
+# Loss calculation including MSE and PINN loss
+class SolveEquationLoss(tf.keras.losses.Loss):
+    def __init__(self, info_dict, mse_weight=0.5):
+        super(SolveEquationLoss, self).__init__()
+        self.info_dict = info_dict
+        self.mse_weight = mse_weight
+
+    def call(self, y_true, y_pred):
+        # PINN loss calculation
+        calculated_value = solve_equation(y_pred, self.info_dict)
+        pinn_loss = tf.reduce_mean(tf.square(calculated_value - y_true))
+
+        # MSE loss calculation
+        mse_loss = tf.reduce_mean(tf.square(y_true - y_pred))
+
+        # Combined PINN loss and MSE loss
+        combined_loss = (1 - self.mse_weight) * pinn_loss + self.mse_weight * mse_loss
+
+        return combined_loss
+
+
+def get_cnn2d():
+    model2d = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, (2, 5), (1, 2), padding="same", activation='relu', input_shape=(16, 64, 10)),
+        tf.keras.layers.Conv2D(64, (2, 3), (1, 2), padding="same", activation='relu'),
+        tf.keras.layers.Conv2D(96, (3, 3), (2, 2), padding="same", activation='relu'),
+        tf.keras.layers.Conv2D(128, (3, 3), (2, 2), padding="same", activation='relu'),
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dropout(rate=0.3)
+    ], name='cnn2d')
+    return model2d
+
+def get_cnn1d():
+    model1d = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, (8, 2), (2, 1), padding="valid", activation='relu', input_shape=(64, 2, 10)),
+        tf.keras.layers.Conv2D(64, (8, 1), (2, 1), padding="valid", activation='relu'),
+        tf.keras.layers.Conv2D(96, (4, 1), (2, 1), padding="valid", activation='relu'),
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dropout(rate=0.3)
+    ], name='cnn1d')
+    return model1d
+
+
+def get_model():
+    cnn2d = get_cnn2d()
+    cnn1d = get_cnn1d()
+    input_1 = tf.keras.layers.Input(shape=(16, 64, 10))
+    input_2 = tf.keras.layers.Input(shape=(64, 1, 10))
+    input_3 = tf.keras.layers.Input(shape=(64, 1, 10))
+    input_23 = tf.keras.layers.Concatenate(axis=2)([input_2, input_3])
+    emb1 = cnn2d(input_1)
+    emb2 = cnn1d(input_23)
+    emb = tf.keras.layers.Concatenate(axis=1)([emb1, emb2])
+    output = tf.keras.layers.Dense(units=1, activation='linear')(emb)
+    model = tf.keras.Model(inputs=[input_1, input_2, input_3], outputs=output)
+    print(model.summary())
+    model.compile(loss=SolveEquationLoss(), optimizer='adam', metrics=['mse'])
+    return model
+
+
+def preprocess_input_cnn(X_train):
+    dop_train = np.array(
+        [np.concatenate([np.expand_dims(e, 2) for e in v.transpose(1, 0)[2]], axis=2) for v in X_train])
+    rp_train = np.array(
+        [np.concatenate([np.expand_dims(e.reshape(-1, 1), 2) for e in v.transpose(1, 0)[0]], axis=2) for v in X_train])
+    noiserp_train = np.array(
+        [np.concatenate([np.expand_dims(e.reshape(-1, 1), 2) for e in v.transpose(1, 0)[1]], axis=2) for v in X_train])
+
+    dop_train_s = (dop_train - dop_train.min()) / (dop_train.max() - dop_train.min())
+    rp_train_s = (rp_train - rp_train.min()) / (rp_train.max() - rp_train.min())
+    noiserp_train_s = (noiserp_train - noiserp_train.min()) / (noiserp_train.max() - noiserp_train.min())
+    return dop_train_s, rp_train_s, noiserp_train_s
+
+
+
+def train(model, dop_train_s, rp_train_s, noiserp_train_s, y_train, epochs=500):
+    model.compile(loss=SolveEquationLoss(), optimizer='adam', metrics=["mse"])
+    history = \
+        model.fit(
+            [dop_train_s, rp_train_s, noiserp_train_s],
+            y_train,
+            epochs=epochs,
+            validation_split=0.2,
+            batch_size=32,
+        )
+    plt.plot(history.history['loss'], label='MSE Loss')
+    plt.plot(history.history['val_loss'], label='Validation MSE Loss')
+    plt.plot(history.history['SolveEquationLoss'], label='PINN Loss')
+    plt.plot(history.history['val_SolveEquationLoss'], label='Validation PINN Loss')
+    plt.legend()
+    plt.show()
+    return model
+
+
+def test(model, dop_test_s, rp_test_s, noiserp_test_s, y_test):
+    test_loss, test_mse = model.evaluate([dop_test_s, rp_test_s, noiserp_test_s], y_test, verbose=0)
+    print(f'Test Loss: {test_loss}')
+    print(f'Test MSE: {test_mse}')
+    return test_loss, test_mse
+
+def preprocess_input(X_train):
+    dop_train = np.array(
+        [np.concatenate([np.expand_dims(e, 2) for e in v.transpose(1, 0)[2]], axis=2) for v in X_train])
+    rp_train = np.array(
+        [np.concatenate([np.expand_dims(e.reshape(-1, 1), 2) for e in v.transpose(1, 0)[0]], axis=2) for v in X_train])
+    noiserp_train = np.array(
+        [np.concatenate([np.expand_dims(e.reshape(-1, 1), 2) for e in v.transpose(1, 0)[1]], axis=2) for v in X_train])
+
+    dop_train_s = (dop_train - dop_train.min()) / (dop_train.max() - dop_train.min())
+    rp_train_s = (rp_train - rp_train.min()) / (rp_train.max() - rp_train.min())
+    noiserp_train_s = (noiserp_train - noiserp_train.min()) / (noiserp_train.max() - noiserp_train.min())
+    return dop_train_s, rp_train_s, noiserp_train_s
+
+def get_df():
+    csv_file_path = "merged_data.csv"
+    merged_df = pd.read_csv(csv_file_path)
+    return merged_df
+
+def get_xtrain_ytrain(merged_df, frame_stack=10):
+    # Frame stacking for input features
+    X = []
+    for i in range(len(merged_df) - frame_stack + 1):
+        frames = merged_df.iloc[i:i+frame_stack].to_numpy()
+        X.append(frames)
+    # Convert list to numpy array
+    X = np.array(X)
+    y = merged_df['file_name'].values
+    # Splitting data into train and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    return X_train, X_test, y_train, y_test

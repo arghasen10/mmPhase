@@ -79,7 +79,8 @@ for file_name in bin_files:
         average_estimated_speed = sum(mean_velocities) / len(mean_velocities) if mean_velocities else 0
         speed_difference = average_estimated_speed - Vb_speed
         
-        dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed, 'Vb_speed': Vb_speed, 'speed_difference': speed_difference})
+        # dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed, 'Vb_speed': Vb_speed, 'speed_difference': speed_difference})
+        dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed})
 
 if inconsistent_files:
     # Print the number of inconsistent files and their names
@@ -91,9 +92,11 @@ if inconsistent_files:
         print(file_name)
 else:
     # Save the data to a CSV
-    csv_filename = 'estimated_speed_vs_Vb.csv'
+    # csv_filename = 'estimated_speed_vs_Vb.csv'
+    csv_filename = 'ground_truth.csv'
     with open(csv_filename, 'w', newline='') as csvfile:
-        fieldnames = ['filename', 'estimated_speed', 'Vb_speed', 'speed_difference']
+        # fieldnames = ['filename', 'estimated_speed', 'Vb_speed', 'speed_difference']
+        fieldnames = ['filename', 'estimated_speed']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
