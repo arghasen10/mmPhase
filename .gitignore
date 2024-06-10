@@ -2,4 +2,4 @@
 /env
 /datasets
 /time_stamps
-dataset.csv
+*.csv

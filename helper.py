@@ -384,35 +384,6 @@ def plot_range(max_range_index,info_dict):
     plt.tight_layout()
     plt.savefig('brightest_range.png')
 
-# def get_velocity_antennawise(range_FFT_, peak, info_dict):
-#     phase_per_antenna = []
-#     vel_peak = []
-    
-#     print("Initial Variables:")
-#     print("range_FFT_:", range_FFT_)
-#     print("peak:", peak)
-#     print("info_dict:", info_dict)
-    
-#     for k in range(cfg.LOOPS_PER_FRAME):
-#         r = range_FFT_[k][peak].real
-#         i = range_FFT_[k][peak].imag
-#         print(f"Iteration {k}:")
-#         print("r (real part):", r)
-#         print("i (imaginary part):", i)
-        
-#         phase = get_phase(r, i)
-#         print("phase:", phase)
-        
-#         phase_per_antenna.append(phase)
-#         print("phase_per_antenna so far:", phase_per_antenna)
-    
-#     phase_cur_frame = phase_unwrapping(len(phase_per_antenna), phase_per_antenna)
-#     print("phase_cur_frame:", phase_cur_frame)
-    
-#     cur_vel = solve_equation(phase_cur_frame, info_dict)
-#     print("cur_vel:", cur_vel)
-    
-#     return cur_vel
 
 def get_velocity_antennawise(range_FFT_,peak,info_dict):
         phase_per_antenna=[]

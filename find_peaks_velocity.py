@@ -1,8 +1,8 @@
 import csv
-from helper import *
 from os import listdir
 from os.path import isfile, join
 from scipy import stats as st
+from helper import *
 
 data_folder = "datasets"
 bin_files = [f for f in listdir(data_folder) if isfile(join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
@@ -90,7 +90,7 @@ if inconsistent_files:
     for file_name in inconsistent_files:
         print(file_name)
 else:
-    # Save the data to a CSV file instead of a JSON file
+    # Save the data to a CSV
     csv_filename = 'estimated_speed_vs_Vb.csv'
     with open(csv_filename, 'w', newline='') as csvfile:
         fieldnames = ['filename', 'estimated_speed', 'Vb_speed', 'speed_difference']
