@@ -325,14 +325,13 @@ def get_phase(r,i):
             phase=np.pi - np.arctan(-i/r)
         else:
             phase=np.pi + np.arctan(i/r)
-    print("R I Phase:", r, i, phase)
     return phase
 
 
 def solve_equation(phase_cur_frame,info_dict):
     phase_diff=[]
-    for i in range (1,len(phase_cur_frame)):
-        phase_diff.append(phase_cur_frame[i]-phase_cur_frame[i-1])
+    for soham in range (1,len(phase_cur_frame)):
+        phase_diff.append(phase_cur_frame[soham]-phase_cur_frame[soham-1])
     Tp=cfg.Tp
     Tc=cfg.Tc
     L = info_dict[0]/100
@@ -478,7 +477,7 @@ def get_consistent_peaks(current_peaks, next_peaks, threshold):
 
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
-    command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
+    command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
@@ -663,6 +662,7 @@ def train(model, X_train, y_train, L_R_array, epochs=500):
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
     model.compile(loss=SolveEquationLoss(X_train, L_R_array), optimizer='adam', metrics=["mse"])
+
     history = \
         model.fit(
             X_train,
