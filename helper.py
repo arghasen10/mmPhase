@@ -334,10 +334,10 @@ def solve_equation(phase_cur_frame,info_dict):
         phase_diff.append(phase_cur_frame[soham]-phase_cur_frame[soham-1])
     Tp=cfg.Tp
     Tc=cfg.Tc
-    L = info_dict[0]/100
-    r0 = info_dict[1]/100
-    #L=info_dict[' L'][0]/100
-    #r0=info_dict[' R'][0]/100
+    #L = info_dict[0]/100
+    #r0 = info_dict[1]/100
+    L=info_dict[' L'][0]/100
+    r0=info_dict[' R'][0]/100
     roots_of_frame=[]
     for i,val in enumerate(phase_diff):
         c=(phase_diff[i]*0.001/3.14)/(3*(Tp+Tc))
@@ -477,7 +477,7 @@ def get_consistent_peaks(current_peaks, next_peaks, threshold):
 
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
-    command =f'python3 data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
+    command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr

@@ -43,7 +43,7 @@ for file_name in bin_files:
             rangeResult = rangeFFT(reshapedFrame, frameConfig)
             rangeResultabs = np.abs(rangeResult)
             rangeHeatmap = np.sum(rangeResultabs, axis=(0,1))
-            rangeResults.append(rangeHeatmap)
+            rangeResults.append(rangeResult)
             current_peaks = all_range_index[frame_no]
             next_peaks = all_range_index[frame_no+1]
             consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
