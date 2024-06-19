@@ -355,7 +355,6 @@ def solve_equation(phase_cur_frame,info_dict):
     for root in roots_of_frame:
         if root >0.9*median_root and root<1.1*median_root:
             final_roots.append(root)
-        print(root)
     return np.mean(final_roots)
 
 
