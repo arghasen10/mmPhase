@@ -63,13 +63,3 @@ with open('merged_data.pkl', 'wb') as f:
     pickle.dump(data_dict, f)
 
 print(f"Merged data saved to merged_data.pkl")
-# print(rangeHeatmaps.shape)
-# # Create a dictionary to save in a DataFrame
-# data_dict = {'rangeHeatmap': rangeHeatmaps_array, 'velocity': velocities_array}
-# df = pd.DataFrame(data_dict)
-
-# # Save the merged DataFrame to a .pkl file
-# pkl_filename = 'merged_data.pkl'
-# df.to_pickle(pkl_filename)
-
-# print(f"Merged data saved to {pkl_filename}")

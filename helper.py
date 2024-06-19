@@ -700,35 +700,6 @@ def preprocess_input(X_train):
     return dop_train_s, rp_train_s, noiserp_train_s
 
 
-# def preprocess_input(X_train):
-#     # Initialize empty lists for Doppler, RP, and NoiseRP
-#     dop_train = []
-#     rp_train = []
-#     noiserp_train = []
-    
-#     # Iterate over each sequence in X_train
-#     for sequence in X_train:
-#         dop_sequence = np.concatenate([np.expand_dims(frame[:, :, 2], axis=-1) for frame in sequence], axis=-1)
-#         rp_sequence = np.concatenate([np.expand_dims(frame[:, :, 0].reshape(-1, 1), axis=-1) for frame in sequence], axis=-1)
-#         noiserp_sequence = np.concatenate([np.expand_dims(frame[:, :, 1].reshape(-1, 1), axis=-1) for frame in sequence], axis=-1)
-        
-#         dop_train.append(dop_sequence)
-#         rp_train.append(rp_sequence)
-#         noiserp_train.append(noiserp_sequence)
-    
-#     # Convert lists to numpy arrays
-#     dop_train = np.array(dop_train)
-#     rp_train = np.array(rp_train)
-#     noiserp_train = np.array(noiserp_train)
-    
-#     # Normalize each array
-#     dop_train_s = (dop_train - dop_train.min()) / (dop_train.max() - dop_train.min())
-#     rp_train_s = (rp_train - rp_train.min()) / (rp_train.max() - rp_train.min())
-#     noiserp_train_s = (noiserp_train - noiserp_train.min()) / (noiserp_train.max() - noiserp_train.min())
-    
-#     return dop_train_s, rp_train_s, noiserp_train_s
-
-
 def get_df():
     pkl_file_path = "merged_data.pkl"
     with open(pkl_file_path, 'rb') as f:
