@@ -23,7 +23,7 @@ for file_name in bin_files:
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = int(info_dict[' Nf'][0])
     pointCloudProcessCFG = PointCloudProcessCFG()
-
+    print_info(info_dict)
     total_frames = total_frames + total_frame_number
 
     max_range_index = []
