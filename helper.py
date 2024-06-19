@@ -661,6 +661,9 @@ def train(model, X_train, y_train, L_R_array, epochs=500):
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
     model.compile(loss=SolveEquationLoss(X_train, L_R_array), optimizer='adam', metrics=["mse"])
+    X_train = np.abs(X_train)
+    X_train  = np.sum(X_train, axis=(0,1))
+    X_train = np.expand_dims(X_train, axis = -1)
     history = \
         model.fit(
             X_train,

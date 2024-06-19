@@ -7,7 +7,7 @@ data_folder = "datasets"
 bin_files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
 
 velocities = []
-rangeHeatmaps = []
+rangeResults = []
 L_R = []
 
 for file_name in bin_files:
@@ -43,7 +43,7 @@ for file_name in bin_files:
             rangeResult = rangeFFT(reshapedFrame, frameConfig)
             rangeResultabs = np.abs(rangeResult)
             rangeHeatmap = np.sum(rangeResultabs, axis=(0,1))
-            rangeHeatmaps.append(rangeHeatmap)
+            rangeResults.append(rangeHeatmap)
             current_peaks = all_range_index[frame_no]
             next_peaks = all_range_index[frame_no+1]
             consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
@@ -52,13 +52,12 @@ for file_name in bin_files:
             mean_velocity = (vel_array_frame.mean())
             velocities.append(mean_velocity)
             L_R.append([info_dict[' L'], info_dict[' R']])
-    print(len(velocities), len(rangeHeatmaps))
 # Convert lists to numpy arrays
-rangeHeatmaps_array = np.array(rangeHeatmaps)
+rangeResults_array = np.array(rangeResults)
 velocities_array = np.array(velocities)
 L_R_array = np.array(L_R)
 
-data_dict = {'rangeHeatmap': rangeHeatmaps_array, 'velocity': velocities_array, 'L_R': L_R_array}
+data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array, 'L_R': L_R_array}
 
 with open('merged_data.pkl', 'wb') as f:
     pickle.dump(data_dict, f)

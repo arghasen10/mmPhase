@@ -41,12 +41,6 @@ for file_name in bin_files:
         intensity_threshold = 100
         peaks_min_intensity_threshold = find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold)
 
-        # velocity = get_velocity(rangeResult, peaks_min_intensity_threshold, info_dict)
-        # # v = np.array(velocity)
-        # final_vel = np.mean(np.array([np.mean(v) for v in velocity]))
-        # # print(v.shape)
-        # print("Velocity: ", final_vel)
-
 
         # Store the maximum peak and all detected peaks
         max_range_index.append(np.argmax(np.sum(rangeResult, axis=0) / frameConfig.numLoopsPerFrame))
