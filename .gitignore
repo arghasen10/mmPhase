@@ -2,6 +2,10 @@ images/
 *.png
 **/*.bin
 **/*.csv
+images/
+*.png
+**/*.bin
+**/*.csv
 **/__pycache__/
 **/*.pdf
 **/*.npz

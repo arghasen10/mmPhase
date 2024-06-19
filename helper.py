@@ -564,16 +564,15 @@ class SolveEquationLoss(tf.keras.losses.Loss):
     def __init__(self, X_train, L_R_array, mse_weight=0.5):
         super(SolveEquationLoss, self).__init__()
         self.i = 0
-        self.X_train = np.squeeze(X_train, axis = -1)
+        self.X_train = np.squeeze(X_train, axis = -1)#.tolist()
         self.L_R_array = L_R_array
         self.mse_weight = mse_weight
 
     def call(self, y_true, y_pred):
         # PINN loss calculation
         pointCloudProcessCFG = PointCloudProcessCFG()
-        peaks_min_intensity_threshold = find_peaks_in_range_Heatmap(self.X_train[self.i], pointCloudProcessCFG, intensity_threshold=100)
+        peaks_min_intensity_threshold = find_peaks_in_range_data(self.X_train[self.i], pointCloudProcessCFG, intensity_threshold=100)
         calculated_value = get_velocity(self.X_train[self.i], peaks_min_intensity_threshold, self.L_R_array[self.i])
-        print(calculated_value)
         self.i = self.i+1
         pinn_loss = tf.reduce_mean(tf.square(calculated_value - y_pred))
 
@@ -662,7 +661,6 @@ def train(model, X_train, y_train, L_R_array, epochs=500):
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
     model.compile(loss=SolveEquationLoss(X_train, L_R_array), optimizer='adam', metrics=["mse"])
-
     history = \
         model.fit(
             X_train,
