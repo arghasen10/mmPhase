@@ -577,23 +577,29 @@ def get_model():
     return model
 
 
-def train(model, X_train, y_train, epochs=500):
-        X_train = np.asarray(X_train)
-        y_train = np.asarray(y_train)
-        model.compile(loss='mse', optimizer='adam', metrics=["mse"])
-        history = \
-            model.fit(
-                X_train,
-                y_train,
-                epochs=epochs,
-                validation_split=0.2,
-                batch_size=32,
-            )
-        plt.plot(history.history['loss'], label='MSE Loss')
-        plt.plot(history.history['val_loss'], label='Validation MSE Loss')
-        plt.legend()
-        plt.show()
-        return model
+def train(model, X_train, y_train, epochs=500, callbacks=None):
+    X_train = np.asarray(X_train)
+    y_train = np.asarray(y_train)
+    model.compile(loss='mse', optimizer='adam', metrics=["mse"])
+    
+    if callbacks is None:
+        callbacks = []
+    
+    history = model.fit(
+        X_train,
+        y_train,
+        epochs=epochs,
+        validation_split=0.2,
+        batch_size=32,
+        callbacks=callbacks
+    )
+    
+    plt.plot(history.history['loss'], label='MSE Loss')
+    plt.plot(history.history['val_loss'], label='Validation MSE Loss')
+    plt.legend()
+    plt.show()
+    
+    return model
 
 
 def test(model, X_test, y_test):
