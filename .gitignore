@@ -2,9 +2,14 @@ images/
 *.png
 **/*.bin
 **/*.csv
+images/
+*.png
+**/*.bin
+**/*.csv
 **/__pycache__/
 **/*.pdf
 **/*.npz
+**/*.pkl
 data.json
 **/*.h5
 imuerror.json
@@ -12,4 +17,3 @@ gt_speed.json
 imuestimate.json
 estimated_speed_mmPhase.json
 estimated_speed_doppler.json
-final_result.json
