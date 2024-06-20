@@ -475,6 +475,7 @@ def get_consistent_peaks(current_peaks, next_peaks, threshold):
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
     command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
+    command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
     stderr = process.stderr
