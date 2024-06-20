@@ -41,9 +41,9 @@ for file_name in bin_files:
             frameConfig = pointCloudProcessCFG.frameConfig
             reshapedFrame = frameReshape(np_frame, frameConfig)
             rangeResult = rangeFFT(reshapedFrame, frameConfig)
+            rangeResults.append(rangeHeatmap)
             rangeResultabs = np.abs(rangeResult)
             rangeHeatmap = np.sum(rangeResultabs, axis=(0,1))
-            rangeResults.append(rangeHeatmap)
             current_peaks = all_range_index[frame_no]
             next_peaks = all_range_index[frame_no+1]
             consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
