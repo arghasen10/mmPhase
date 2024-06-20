@@ -1,3 +1,4 @@
+import os
 import struct
 import pickle
 import numpy as np
@@ -578,7 +579,11 @@ def get_model():
 
 
 def train(model, X_train, y_train, epochs=500):
+        save_dir = 'results'
+        os.makedirs(save_dir, exist_ok=True)
         X_train = np.asarray(X_train)
+        X_train = np.abs(X_train)
+        X_train = np.sum(X_train, axis=(0,1))
         y_train = np.asarray(y_train)
         model.compile(loss='mse', optimizer='adam', metrics=["mse"])
         history = \
@@ -589,17 +594,37 @@ def train(model, X_train, y_train, epochs=500):
                 validation_split=0.2,
                 batch_size=32,
             )
+        # Plot and save the training history
+        plt.figure()
         plt.plot(history.history['loss'], label='MSE Loss')
         plt.plot(history.history['val_loss'], label='Validation MSE Loss')
         plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Training and Validation Loss')
+        plt.savefig(os.path.join(save_dir, 'training_history.png'))
         plt.show()
+
+        # Save training history to a CSV file
+        history_df = pd.DataFrame(history.history)
+        history_df.to_csv(os.path.join(save_dir, 'training_history.csv'), index=False)
+
         return model
 
 
 def test(model, X_test, y_test):
+    save_dir = 'results'
+    os.makedirs(save_dir, exist_ok=True)
+
     test_loss, test_mse = model.evaluate(X_test, y_test, verbose=0)
     print(f'Test Loss: {test_loss}')
     print(f'Test MSE: {test_mse}')
+
+    # Save test results to a file
+    with open(os.path.join(save_dir, 'test_results.txt'), 'w') as f:
+        f.write(f'Test Loss: {test_loss}\n')
+        f.write(f'Test MSE: {test_mse}\n')
+
     return test_loss, test_mse
 
 
