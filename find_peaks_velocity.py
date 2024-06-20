@@ -1,4 +1,4 @@
-# Get consistent peaks for ech frame, get velocity for frame from equation, mean and compare with ground truth
+# Get consistent peaks for each frame, get velocity for frame from equation, mean and compare with ground truth
 import csv
 from os import listdir
 from os.path import isfile, join
