@@ -1,3 +1,4 @@
+# Get consistent peaks for ech frame, get velocity for frame from equation, mean and compare with ground truth
 import csv
 from os import listdir
 from os.path import isfile, join
@@ -26,7 +27,6 @@ for file_name in bin_files:
     print_info(info_dict)
     total_frames = total_frames + total_frame_number
 
-    max_range_index = []
     all_range_index = []
     all_consistent_peaks = []
     consistent = True
@@ -37,24 +37,17 @@ for file_name in bin_files:
         frameConfig = pointCloudProcessCFG.frameConfig
         reshapedFrame = frameReshape(np_frame, frameConfig)
         rangeResult = rangeFFT(reshapedFrame, frameConfig)
-        # rangeResult = np.abs(rangeResult)
         intensity_threshold = 100
         peaks_min_intensity_threshold = find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold)
 
-
-        # Store the maximum peak and all detected peaks
-        max_range_index.append(np.argmax(np.sum(rangeResult, axis=0) / frameConfig.numLoopsPerFrame))
         all_range_index.append(peaks_min_intensity_threshold)
 
         threshold = 10
         if frame_no > 0:
             current_peaks = all_range_index[frame_no-1]
             next_peaks = all_range_index[frame_no]
-            # print("Current:", current_peaks)
-            # print("Next:", next_peaks)
             if check_consistency_of_frame(current_peaks, next_peaks, threshold):
                 consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
-                # print("Consistent:", consistent_peaks)
                 all_consistent_peaks.append(consistent_peaks)
             else:
                 print("Inconsistent frame found")
@@ -73,9 +66,8 @@ for file_name in bin_files:
         average_estimated_speed = sum(mean_velocities) / len(mean_velocities) if mean_velocities else 0
         speed_difference = average_estimated_speed - Vb_speed
         
-        # dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed, 'Vb_speed': Vb_speed, 'speed_difference': speed_difference})
-        dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed})
-
+        dict_list.append({'filename': file_name, 'estimated_speed': average_estimated_speed, 'Vb_speed': Vb_speed, 'speed_difference': speed_difference})
+        
 if inconsistent_files:
     # Print the number of inconsistent files and their names
     inconsistent_files = set(inconsistent_files)
@@ -86,11 +78,9 @@ if inconsistent_files:
         print(file_name)
 else:
     # Save the data to a CSV
-    # csv_filename = 'estimated_speed_vs_Vb.csv'
-    csv_filename = 'ground_truth.csv'
+    csv_filename = 'estimated_speed_vs_Vb.csv'
     with open(csv_filename, 'w', newline='') as csvfile:
-        # fieldnames = ['filename', 'estimated_speed', 'Vb_speed', 'speed_difference']
-        fieldnames = ['filename', 'estimated_speed']
+        fieldnames = ['filename', 'estimated_speed', 'Vb_speed', 'speed_difference']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
