@@ -8,3 +8,4 @@ X_train, X_test, y_train, y_test = train_test_split(rangeResults_array, velociti
 model = get_model()
 model = train(model, X_train, y_train, epochs=500)
 test_result = test(model, X_test, y_test)
+print("Finished")
