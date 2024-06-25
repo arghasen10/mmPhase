@@ -1,3 +1,4 @@
+import os
 import struct
 import pickle
 import numpy as np
@@ -12,6 +13,7 @@ import subprocess
 import statistics
 from scipy.signal import find_peaks
 from sklearn.model_selection import train_test_split
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 plt.rcParams.update({'font.size': 24})
 plt.rcParams["figure.figsize"] = (10, 7)
 plt.rcParams["font.weight"] = "bold"
