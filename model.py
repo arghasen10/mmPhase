@@ -39,7 +39,6 @@ def train_batchwise(model, X_train, y_train, batch_size, epochs, save_interval=1
     
     return model
 
-# Load the data
 data = get_df()
 rangeResults_array = data['rangeResult']
 velocities_array = data['velocity']
@@ -55,7 +54,7 @@ if mse == 1:
 
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(rangeResults_array, velocities_array, test_size=0.2, random_state=42)
-
+print("X_TRAIN:",X_train[0][0][0][0])
 X_train = tf.convert_to_tensor(X_train, dtype='float64')
 X_test = tf.convert_to_tensor(X_test, dtype='float64')
 y_train = tf.convert_to_tensor(y_train, dtype='float64')

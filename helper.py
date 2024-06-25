@@ -11,7 +11,6 @@ import argparse
 import pandas as pd
 import subprocess
 import statistics
-import keras
 from scipy.signal import find_peaks
 from sklearn.model_selection import train_test_split
 plt.rcParams.update({'font.size': 24})
@@ -578,29 +577,11 @@ def get_model():
     print(model.summary())
     return model
 
-# def mse_loss(y_true, y_pred):
-#     """
-#     Calculate the Mean Squared Error (MSE) loss.
-
-#     Parameters:
-#     y_true (np.ndarray): Array of true values.
-#     y_pred (np.ndarray): Array of predicted values.
-
-#     Returns:
-#     float: Mean Squared Error loss.
-#     """
-
-#     # Calculate the MSE loss
-#     mse = keras.mean((y_true - y_pred) ** 2)
-    
-#     return mse
 
 def train(model, X_train, y_train, epochs=500):
         save_dir = 'results'
         os.makedirs(save_dir, exist_ok=True)
-        print("X_train Shape:", X_train.shape)
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='mse', metrics=['accuracy'])
-        # model.compile(loss='mse', optimizer='adam', metrics=["mse"])
+        model.compile(loss='mse', optimizer='adam', metrics=["mse"])
         history = \
             model.fit(
                 X_train,
