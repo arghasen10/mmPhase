@@ -11,6 +11,7 @@ import argparse
 import pandas as pd
 import subprocess
 import statistics
+import keras
 from scipy.signal import find_peaks
 from sklearn.model_selection import train_test_split
 plt.rcParams.update({'font.size': 24})
@@ -563,7 +564,8 @@ def get_cnn():
         tf.keras.layers.Conv2D(96, (3, 3), (2, 2), padding="same", activation='relu'),
         tf.keras.layers.Conv2D(128, (3, 3), (2, 2), padding="same", activation='relu'),
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dropout(rate=0.3)
+        tf.keras.layers.Dropout(rate=0.3),
+        tf.keras.layers.Dense(units=1, activation='linear')
     ], name='cnn2d')
     return model2d
 
@@ -571,21 +573,34 @@ def get_cnn():
 def get_model():
     cnn = get_cnn()
     input = tf.keras.layers.Input(shape=(182, 256, 1))
-    emb = cnn(input)
-    output = tf.keras.layers.Dense(units=1, activation='linear')(emb)
+    output = cnn(input)
     model = tf.keras.Model(inputs=input, outputs=output)
     print(model.summary())
     return model
 
+# def mse_loss(y_true, y_pred):
+#     """
+#     Calculate the Mean Squared Error (MSE) loss.
+
+#     Parameters:
+#     y_true (np.ndarray): Array of true values.
+#     y_pred (np.ndarray): Array of predicted values.
+
+#     Returns:
+#     float: Mean Squared Error loss.
+#     """
+
+#     # Calculate the MSE loss
+#     mse = keras.mean((y_true - y_pred) ** 2)
+    
+#     return mse
 
 def train(model, X_train, y_train, epochs=500):
         save_dir = 'results'
         os.makedirs(save_dir, exist_ok=True)
-        X_train = np.asarray(X_train)
-        X_train = np.abs(X_train)
-        X_train = np.sum(X_train, axis=(0,1))
-        y_train = np.asarray(y_train)
-        model.compile(loss='mse', optimizer='adam', metrics=["mse"])
+        print("X_train Shape:", X_train.shape)
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='mse', metrics=['accuracy'])
+        # model.compile(loss='mse', optimizer='adam', metrics=["mse"])
         history = \
             model.fit(
                 X_train,
@@ -634,7 +649,7 @@ def get_df():
         data_dict = pickle.load(f)
     return data_dict
 
-def get_xtrain_ytrain(merged_df, frame_stack=10):
+def get_xtrain_ytrain(merged_df, frame_stack=1):
     # Frame stacking for input features
     X = []
     y = []
