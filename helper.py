@@ -467,13 +467,13 @@ def find_peaks_in_range_data(rangeResult, pointcloud_processcfg, intensity_thres
     
     return peaks_min_intensity_threshold
 
-def check_consistency_of_frame(current_peaks, next_peaks, threshold):
-    if not any(any(abs(c - n) <= threshold for n in next_peaks) for c in current_peaks):
+def check_consistency_of_frame(previous_peaks, current_peaks, threshold):
+    if not any(any(abs(c - n) <= threshold for n in current_peaks) for c in previous_peaks):
         return False
     return True
 
-def get_consistent_peaks(current_peaks, next_peaks, threshold):
-    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-n) <= threshold for n in next_peaks) for c in current_peaks) if val]
+def get_consistent_peaks(previous_peaks, current_peaks, threshold):
+    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-n) <= threshold for c in previous_peaks) for n in current_peaks) if val]
     return consistent_peaks
 
 def run_data_read_only_sensor(info_dict):
@@ -572,7 +572,7 @@ class SolveEquationLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         # PINN loss calculation
         pointCloudProcessCFG = PointCloudProcessCFG()
-        peaks_min_intensity_threshold = find_peaks_in_range_data(self.X_train[self.i], pointCloudProcessCFG, intensity_threshold=100)
+        peaks_min_intensity_threshold = find_peaks_in_range_data(self.X_train, pointCloudProcessCFG, intensity_threshold=100)
         calculated_value = get_velocity(self.X_train[self.i], peaks_min_intensity_threshold, self.L_R_array[self.i])
         self.i = self.i+1
         pinn_loss = tf.reduce_mean(tf.square(calculated_value - y_pred))

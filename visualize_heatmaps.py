@@ -1,6 +1,8 @@
 import os
 from os.path import isfile, join
 from matplotlib.animation import FuncAnimation
+import seaborn as sns
+import matplotlib.pyplot as plt
 from helper import *
 
 data_folder = "datasets"
@@ -39,28 +41,30 @@ def process_file(file_name):
         peaks_min_intensity_threshold = find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold)
 
         all_range_index.append(peaks_min_intensity_threshold)
-
         threshold = 10
-        if frame_no > 0:
-            current_peaks = all_range_index[frame_no-1]
+        if frame_no == 0:
+            all_consistent_peaks.append(find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold))
+        else:
+            current_peaks = all_consistent_peaks[frame_no-1]
             next_peaks = all_range_index[frame_no]
             consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
             all_consistent_peaks.append(consistent_peaks)
 
-    return heatmaps, all_consistent_peaks
+    return heatmaps, all_consistent_peaks, file_name
 
 def update(frame):
     ax.clear()
     sns.heatmap(frame[0], ax=ax, cbar=False)
     for peak in frame[1]:
         ax.axvline(x=peak, color='r', linestyle='--')
+    ax.text(0.5, 1.05, frame[2], ha='center', va='center', transform=ax.transAxes, fontsize=12)
 
 frames = []
 for file_name in bin_files:
-    heatmaps, consistent_peaks = process_file(file_name)
+    heatmaps, consistent_peaks, file_name = process_file(file_name)
     for i, heatmap in enumerate(heatmaps):
         if i < len(consistent_peaks):
-            frames.append((heatmap, consistent_peaks[i]))
+            frames.append((heatmap, consistent_peaks[i], file_name))
 
 ani = FuncAnimation(fig, update, frames=frames, repeat=False)
 plt.show()

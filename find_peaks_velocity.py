@@ -43,17 +43,21 @@ for file_name in bin_files:
         all_range_index.append(peaks_min_intensity_threshold)
 
         threshold = 10
-        if frame_no > 0:
-            current_peaks = all_range_index[frame_no-1]
-            next_peaks = all_range_index[frame_no]
-            if check_consistency_of_frame(current_peaks, next_peaks, threshold):
-                consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
+        
+        if frame_no == 0:
+            all_consistent_peaks.append(find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold))
+        else:
+            previous_peaks = all_consistent_peaks[frame_no-1]
+            current_peaks = all_range_index[frame_no]
+            if check_consistency_of_frame(previous_peaks, current_peaks, threshold):
+                consistent_peaks = get_consistent_peaks(previous_peaks, current_peaks, threshold)
                 all_consistent_peaks.append(consistent_peaks)
             else:
                 print("Inconsistent frame found")
                 inconsistent_files.append(file_name)
                 inconsistent_frames = inconsistent_frames + 1
                 consistent = False
+
     
     if not inconsistent_files:
         for frame_no in range(len(all_consistent_peaks)):
