@@ -176,3 +176,6 @@ def get_gt_velocity(filename):
     plt.savefig('vel_vicon.pdf')
     plt.show()
     return df_vel.groupby('sec')['vel'].mean()
+
+filename = 'ground_truth/29_03_24_vicon_85_Trajectories_100.csv'
+print(get_gt_velocity(filename))
