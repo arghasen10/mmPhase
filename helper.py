@@ -468,12 +468,12 @@ def find_peaks_in_range_data(rangeResult, pointcloud_processcfg, intensity_thres
     return peaks_min_intensity_threshold
 
 def check_consistency_of_frame(previous_peaks, current_peaks, threshold):
-    if not any(any(abs(c - n) <= threshold for n in current_peaks) for c in previous_peaks):
+    if not any(any(abs(c - p) <= threshold for c in current_peaks) for p in previous_peaks):
         return False
     return True
 
 def get_consistent_peaks(previous_peaks, current_peaks, threshold):
-    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-n) <= threshold for c in previous_peaks) for n in current_peaks) if val]
+    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-p) <= threshold for p in previous_peaks) for c in current_peaks) if val]
     return consistent_peaks
 
 def run_data_read_only_sensor(info_dict):

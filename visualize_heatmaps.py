@@ -1,8 +1,9 @@
+# Save animation of heatmaps for each file in animations folder
 import os
 from os.path import isfile, join
+from statistics import mode
+import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
-import seaborn as sns
-import matplotlib.pyplot as plt
 from helper import *
 
 data_folder = "datasets"
@@ -21,10 +22,10 @@ def process_file(file_name):
     print_info(info_dict)
 
     all_range_index = []
+    all_mode_peak = []
     all_consistent_peaks = []
     heatmaps = []
 
-    # Iterate through each frame in the current file
     for frame_no in range(total_frame_number):
         bin_frame = bin_reader.getNextFrame(pointCloudProcessCFG.frameConfig)
         np_frame = bin2np_frame(bin_frame)
@@ -33,38 +34,56 @@ def process_file(file_name):
         rangeResult = rangeFFT(reshapedFrame, frameConfig)
         rangeResult = np.abs(rangeResult)
         rangeHeatmap = np.sum(rangeResult, axis=(0,1))
-
-        # Store heatmap for later animation
         heatmaps.append(rangeHeatmap)
-        
-        intensity_threshold = 100
-        peaks_min_intensity_threshold = find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold)
-
-        all_range_index.append(peaks_min_intensity_threshold)
-        threshold = 10
+    
+        range_result_absnormal_split = []
+        for i in range(pointCloudProcessCFG.frameConfig.numTxAntennas):
+            for j in range(pointCloudProcessCFG.frameConfig.numRxAntennas):
+                r_r = np.abs(rangeResult[i][j])
+                r_r[:,0:10] = 0
+                min_val = np.min(r_r)
+                max_val = np.max(r_r)
+                r_r_normalise = (r_r - min_val) / (max_val - min_val) * 1000
+                range_result_absnormal_split.append(r_r_normalise)
+        range_abs_combined_nparray = np.zeros((pointCloudProcessCFG.frameConfig.numLoopsPerFrame, pointCloudProcessCFG.frameConfig.numADCSamples))
+        for ele in range_result_absnormal_split:
+            range_abs_combined_nparray += ele
+        range_abs_combined_nparray /= (pointCloudProcessCFG.frameConfig.numTxAntennas * pointCloudProcessCFG.frameConfig.numRxAntennas)
+        range_abs_combined_nparray_collapsed = np.sum(range_abs_combined_nparray, axis=0) / pointCloudProcessCFG.frameConfig.numLoopsPerFrame
+        peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
+        intensities_peaks = [[range_abs_combined_nparray_collapsed[idx],idx] for idx in peaks]
+        peaks = [i[1] for i in sorted(intensities_peaks, reverse=True)[:3]]
+        print("ALL:", peaks)
+        all_range_index.append(peaks)
         if frame_no == 0:
-            all_consistent_peaks.append(find_peaks_in_range_data(rangeResult, pointCloudProcessCFG, intensity_threshold))
+            all_consistent_peaks.append(peaks)
+            all_mode_peak.append(mode(peaks))
         else:
-            current_peaks = all_consistent_peaks[frame_no-1]
-            next_peaks = all_range_index[frame_no]
-            consistent_peaks = get_consistent_peaks(current_peaks, next_peaks, threshold)
+            previous_peaks = all_range_index[frame_no-1]
+            current_peaks = all_range_index[frame_no]
+            consistent_peaks = get_consistent_peaks(previous_peaks, current_peaks, threshold=10)
+            print("CONSISTENT:", consistent_peaks)
             all_consistent_peaks.append(consistent_peaks)
+            all_mode_peak.append(mode(consistent_peaks))
 
-    return heatmaps, all_consistent_peaks, file_name
+    return heatmaps, all_consistent_peaks, all_mode_peak, file_name
 
 def update(frame):
     ax.clear()
+
     sns.heatmap(frame[0], ax=ax, cbar=False)
     for peak in frame[1]:
         ax.axvline(x=peak, color='r', linestyle='--')
-    ax.text(0.5, 1.05, frame[2], ha='center', va='center', transform=ax.transAxes, fontsize=12)
+    ax.axvline(x=frame[2], color='g', linestyle='-', linewidth=4)
+    ax.text(0.5, 1.05, frame[3], ha='center', va='center', transform=ax.transAxes, fontsize=12)
 
-frames = []
 for file_name in bin_files:
-    heatmaps, consistent_peaks, file_name = process_file(file_name)
+    frames = []
+    heatmaps, consistent_peaks, mode_peak, file_name = process_file(file_name)
     for i, heatmap in enumerate(heatmaps):
         if i < len(consistent_peaks):
-            frames.append((heatmap, consistent_peaks[i], file_name))
-
-ani = FuncAnimation(fig, update, frames=frames, repeat=False)
-plt.show()
+            frames.append((heatmap, consistent_peaks[i], mode_peak[i], file_name))
+    ani = FuncAnimation(fig, update, frames=frames, repeat=False)
+    mywriter = animation.FFMpegWriter(fps=5)
+    ani.save("animations/"+file_name+".mp4",writer=mywriter)
+    print("Animation", file_name, "saved.")
