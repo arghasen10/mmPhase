@@ -1,4 +1,3 @@
-# Save animation of heatmaps for each file in animations folder
 import os
 from os.path import isfile, join
 from statistics import mode

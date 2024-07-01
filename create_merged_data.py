@@ -1,4 +1,3 @@
-# Create pickle dump of dictionary of numpy arrays rangeResult(n,182,256), velocity(n,), L_R(n,)
 import os
 import pickle
 import numpy as np
