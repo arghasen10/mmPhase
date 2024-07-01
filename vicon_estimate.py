@@ -120,25 +120,25 @@ def get_gt_velocity(filename):
         prev = vicon_data[e]
 
 
-    fig = plt.figure(figsize=(12, 12))
-    ax = fig.add_subplot(projection='3d')
-    color=sns.color_palette(n_colors=len(ids))
+    # fig = plt.figure(figsize=(12, 12))
+    # ax = fig.add_subplot(projection='3d')
+    # color=sns.color_palette(n_colors=len(ids))
 
-    for id in ids.keys():
-        if len(ids[id])< 10:
-            continue
-        x=[p.x for p in ids[id]]
-        y=[p.y for p in ids[id]]
-        z=[p.z for p in ids[id]]
-        ax.scatter(x, y, z,color=color[id],label=f'Marker {id}')
+    # for id in ids.keys():
+    #     if len(ids[id])< 10:
+    #         continue
+    #     x=[p.x for p in ids[id]]
+    #     y=[p.y for p in ids[id]]
+    #     z=[p.z for p in ids[id]]
+    #     ax.scatter(x, y, z,color=color[id],label=f'Marker {id}')
 
-    x=[p.x for fn in range(len(ids)) for p in ids[fn]]
-    y=[p.y for fn in range(len(ids)) for p in ids[fn]]
-    z=[p.z for fn in range(len(ids)) for p in ids[fn]]
-    ax.scatter(x, y, z,color='k',label='Whole',s=1,alpha=0.1)
+    # x=[p.x for fn in range(len(ids)) for p in ids[fn]]
+    # y=[p.y for fn in range(len(ids)) for p in ids[fn]]
+    # z=[p.z for fn in range(len(ids)) for p in ids[fn]]
+    # ax.scatter(x, y, z,color='k',label='Whole',s=1,alpha=0.1)
 
-    plt.legend()
-    plt.show()
+    # plt.legend()
+    # plt.show()
 
 
 
@@ -157,25 +157,50 @@ def get_gt_velocity(filename):
 
 
 
-    sns.kdeplot(df_vel['vel'])
-    plt.axvline(np.median(df_vel['vel']),color='k',ls='--',label=f"Median: {np.round(np.median(df_vel['vel']),4)} cm/sec")
-    plt.axvline(np.mean(df_vel['vel']),color='green',label=f"Mean: {np.round(np.mean(df_vel['vel']),4)} cm/sec")
-    plt.legend()
-    plt.savefig('mean_median_speed_estimate.pdf')
-    plt.show()
+    # sns.kdeplot(df_vel['vel'])
+    # plt.axvline(np.median(df_vel['vel']),color='k',ls='--',label=f"Median: {np.round(np.median(df_vel['vel']),4)} cm/sec")
+    # plt.axvline(np.mean(df_vel['vel']),color='green',label=f"Mean: {np.round(np.mean(df_vel['vel']),4)} cm/sec")
+    # plt.legend()
+    # plt.savefig('mean_median_speed_estimate.pdf')
+    # plt.show()
 
     df_vel['sec']=np.round(df_vel.timestamp)
 
-    plt.figure(figsize=(15,3))
-    df_vel.groupby('sec')['vel'].mean().plot(label='mean')
-    df_vel.groupby('sec')['vel'].median().plot(label='median')
-    plt.ylabel('Velocity (cm/sec)')
-    plt.legend()
-    plt.ylabel('Vicon Estiated Speed')
-    plt.xlabel('No. of Frames')
-    plt.savefig('vel_vicon.pdf')
-    plt.show()
+    # plt.figure(figsize=(15,3))
+    # df_vel.groupby('sec')['vel'].mean().plot(label='mean')
+    # df_vel.groupby('sec')['vel'].median().plot(label='median')
+    # plt.ylabel('Velocity (cm/sec)')
+    # plt.legend()
+    # plt.ylabel('Vicon Estimated Speed')
+    # plt.xlabel('No. of Frames')
+    # plt.savefig('vel_vicon.pdf')
+    # plt.show()
     return df_vel.groupby('sec')['vel'].mean()
 
-filename = 'ground_truth/29_03_24_vicon_85_Trajectories_100.csv'
-print(get_gt_velocity(filename))
+data_folder = "ground_truth"
+csv_files = ["ground_truth/"+f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f))]
+
+for file_name in csv_files:
+    print("Processing file", file_name)
+    gt_velocity = get_gt_velocity(file_name)
+    if gt_velocity.empty:
+        print(f"No valid data for file {file_name}")
+        continue
+    print(gt_velocity)
+
+    # Calculate the rolling mean to smooth the data
+    gt_velocity = gt_velocity.reset_index()
+    gt_velocity['rolling_vel'] = gt_velocity['vel'].rolling(window=5).mean()
+
+    # Identify the segment with the most stable velocity (smallest standard deviation)
+    stable_segment = gt_velocity.loc[(gt_velocity['rolling_vel'].notna()) & (gt_velocity['rolling_vel'].diff().abs() < 0.05)]
+
+    if stable_segment.empty:
+        print(f"No stable velocity segment found for file {file_name}")
+        continue
+
+    # Calculate the mean of the stable velocity segment
+    estimated_velocity = stable_segment['vel'].mean()
+
+    print(stable_segment)
+    print(f"Estimated Constant Velocity: {estimated_velocity}")
