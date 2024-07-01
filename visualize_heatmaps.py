@@ -1,17 +1,17 @@
-# Create pickle dump of dictionary of numpy arrays rangeResult(n,182,256), velocity(n,), L_R(n,)
+# Save animation of heatmaps for each file in animations folder
 import os
-import pickle
-import numpy as np
+from os.path import isfile, join
+from statistics import mode
+import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation
 from helper import *
 
 data_folder = "datasets"
-bin_files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
+bin_files = [f for f in os.listdir(data_folder) if isfile(join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
 
-velocities = []
-rangeResults = []
-L_R = []
+fig, ax = plt.subplots()
 
-for file_name in bin_files:
+def process_file(file_name):
     print("Processing file ", file_name)
     info_dict = get_info(file_name)
     run_data_read_only_sensor(info_dict)
@@ -19,9 +19,12 @@ for file_name in bin_files:
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = int(info_dict[' Nf'][0])
     pointCloudProcessCFG = PointCloudProcessCFG()
-    
+    print_info(info_dict)
+
     all_range_index = []
+    all_mode_peak = []
     all_consistent_peaks = []
+    heatmaps = []
 
     for frame_no in range(total_frame_number):
         bin_frame = bin_reader.getNextFrame(pointCloudProcessCFG.frameConfig)
@@ -29,8 +32,10 @@ for file_name in bin_files:
         frameConfig = pointCloudProcessCFG.frameConfig
         reshapedFrame = frameReshape(np_frame, frameConfig)
         rangeResult = rangeFFT(reshapedFrame, frameConfig)
-        rangeResults.append(rangeResult)
-        
+        rangeResult = np.abs(rangeResult)
+        rangeHeatmap = np.sum(rangeResult, axis=(0,1))
+        heatmaps.append(rangeHeatmap)
+    
         range_result_absnormal_split = []
         for i in range(pointCloudProcessCFG.frameConfig.numTxAntennas):
             for j in range(pointCloudProcessCFG.frameConfig.numRxAntennas):
@@ -48,29 +53,37 @@ for file_name in bin_files:
         peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
         intensities_peaks = [[range_abs_combined_nparray_collapsed[idx],idx] for idx in peaks]
         peaks = [i[1] for i in sorted(intensities_peaks, reverse=True)[:3]]
+        print("ALL:", peaks)
         all_range_index.append(peaks)
-        # For first frame take all peaks as consistent peaks
         if frame_no == 0:
             all_consistent_peaks.append(peaks)
+            all_mode_peak.append(mode(peaks))
         else:
             previous_peaks = all_range_index[frame_no-1]
             current_peaks = all_range_index[frame_no]
             consistent_peaks = get_consistent_peaks(previous_peaks, current_peaks, threshold=10)
+            print("CONSISTENT:", consistent_peaks)
             all_consistent_peaks.append(consistent_peaks)
-        vel_array_frame = np.array(get_velocity(rangeResult,all_consistent_peaks[frame_no],info_dict)).flatten()
-        mean_velocity = (vel_array_frame.mean())
-        velocities.append(mean_velocity)
-        L_R.append([info_dict[' L'], info_dict[' R']])
+            all_mode_peak.append(mode(consistent_peaks))
 
+    return heatmaps, all_consistent_peaks, all_mode_peak, file_name
 
-# Convert lists to numpy arrays
-rangeResults_array = np.array(rangeResults)
-velocities_array = np.array(velocities)
-L_R_array = np.array(L_R)
+def update(frame):
+    ax.clear()
 
-data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array, 'L_R': L_R_array}
+    sns.heatmap(frame[0], ax=ax, cbar=False)
+    for peak in frame[1]:
+        ax.axvline(x=peak, color='r', linestyle='--')
+    ax.axvline(x=frame[2], color='g', linestyle='-', linewidth=4)
+    ax.text(0.5, 1.05, frame[3], ha='center', va='center', transform=ax.transAxes, fontsize=12)
 
-with open('merged_data.pkl', 'wb') as f:
-    pickle.dump(data_dict, f)
-
-print(f"Merged data saved to merged_data.pkl")
+for file_name in bin_files:
+    frames = []
+    heatmaps, consistent_peaks, mode_peak, file_name = process_file(file_name)
+    for i, heatmap in enumerate(heatmaps):
+        if i < len(consistent_peaks):
+            frames.append((heatmap, consistent_peaks[i], mode_peak[i], file_name))
+    ani = FuncAnimation(fig, update, frames=frames, repeat=False)
+    mywriter = animation.FFMpegWriter(fps=5)
+    ani.save("animations/"+file_name+".mp4",writer=mywriter)
+    print("Animation", file_name, "saved.")
