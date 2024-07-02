@@ -412,30 +412,6 @@ def get_velocity(rangeResult,range_peaks,info_dict):
         vel_array_frame.append(vel_arr_all_ant)
     return vel_array_frame
 
-def find_peaks_in_range_Heatmap(rangeHeatmap, pointcloud_processcfg, intensity_threshold):
-    range_result_absnormal_split = []
-    r_r = rangeHeatmap
-    r_r[:,0:10] = 0
-    min_val = np.min(r_r)
-    max_val = np.max(r_r)
-    r_r_normalise = (r_r - min_val) / (max_val - min_val) * 1000
-    range_result_absnormal_split.append(r_r_normalise)
-
-    range_abs_combined_nparray = np.zeros((pointcloud_processcfg.frameConfig.numLoopsPerFrame, pointcloud_processcfg.frameConfig.numADCSamples))
-    for ele in range_result_absnormal_split:
-        range_abs_combined_nparray += ele
-    range_abs_combined_nparray /= (pointcloud_processcfg.frameConfig.numTxAntennas * pointcloud_processcfg.frameConfig.numRxAntennas)
-    
-    range_abs_combined_nparray_collapsed = np.sum(range_abs_combined_nparray, axis=0) / pointcloud_processcfg.frameConfig.numLoopsPerFrame
-    peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
-
-    peaks_min_intensity_threshold = []
-    for indices in peaks:
-        if range_abs_combined_nparray_collapsed[indices] > intensity_threshold:
-            peaks_min_intensity_threshold.append(indices)
-    
-    return peaks_min_intensity_threshold
-
 
 def find_peaks_in_range_data(rangeResult, pointcloud_processcfg, intensity_threshold):
     range_result_absnormal_split = []
@@ -463,18 +439,17 @@ def find_peaks_in_range_data(rangeResult, pointcloud_processcfg, intensity_thres
     
     return peaks_min_intensity_threshold
 
-def check_consistency_of_frame(current_peaks, next_peaks, threshold):
-    if not any(any(abs(c - n) <= threshold for n in next_peaks) for c in current_peaks):
+def check_consistency_of_frame(previous_peaks, current_peaks, threshold):
+    if not any(any(abs(c - p) <= threshold for c in current_peaks) for p in previous_peaks):
         return False
     return True
 
-def get_consistent_peaks(current_peaks, next_peaks, threshold):
-    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-n) <= threshold for n in next_peaks) for c in current_peaks) if val]
+def get_consistent_peaks(previous_peaks, current_peaks, threshold):
+    consistent_peaks = [current_peaks[i] for i, val in enumerate(any(abs(c-p) <= threshold for p in previous_peaks) for c in current_peaks) if val]
     return consistent_peaks
 
 def run_data_read_only_sensor(info_dict):
     filename = 'datasets/'+info_dict["filename"][0]
-    command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     command =f'python data_read_only_sensor.py {filename} {info_dict[" Nf"][0]}'
     process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = process.stdout
@@ -554,78 +529,8 @@ def get_mode_velocity(velocity_array_framewise):
     vel_mode = statistics.mode(vel_array_all)
     return vel_mode
 
-# Neural Network Implementation
-def get_cnn():
-    model2d = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, (2, 5), (1, 2), padding="same", activation='relu', input_shape=(182, 256, 1)),
-        tf.keras.layers.Conv2D(64, (2, 3), (1, 2), padding="same", activation='relu'),
-        tf.keras.layers.Conv2D(96, (3, 3), (2, 2), padding="same", activation='relu'),
-        tf.keras.layers.Conv2D(128, (3, 3), (2, 2), padding="same", activation='relu'),
-        tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dropout(rate=0.3)
-    ], name='cnn2d')
-    return model2d
-
-
-def get_model():
-    cnn = get_cnn()
-    input = tf.keras.layers.Input(shape=(182, 256, 1))
-    emb = cnn(input)
-    output = tf.keras.layers.Dense(units=1, activation='linear')(emb)
-    model = tf.keras.Model(inputs=input, outputs=output)
-    print(model.summary())
-    return model
-
-
-def train(model, X_train, y_train, epochs=500):
-        X_train = np.asarray(X_train)
-        y_train = np.asarray(y_train)
-        model.compile(loss='mse', optimizer='adam', metrics=["mse"])
-        history = \
-            model.fit(
-                X_train,
-                y_train,
-                epochs=epochs,
-                validation_split=0.2,
-                batch_size=32,
-            )
-        plt.plot(history.history['loss'], label='MSE Loss')
-        plt.plot(history.history['val_loss'], label='Validation MSE Loss')
-        plt.legend()
-        plt.show()
-        return model
-
-
-def test(model, X_test, y_test):
-    test_loss, test_mse = model.evaluate(X_test, y_test, verbose=0)
-    print(f'Test Loss: {test_loss}')
-    print(f'Test MSE: {test_mse}')
-    return test_loss, test_mse
-
-
 def get_df():
     pkl_file_path = "merged_data.pkl"
     with open(pkl_file_path, 'rb') as f:
         data_dict = pickle.load(f)
     return data_dict
-
-def get_xtrain_ytrain(merged_df, frame_stack=10):
-    # Frame stacking for input features
-    X = []
-    y = []
-    
-    for i in range(len(merged_df) - frame_stack + 1):
-        range_heatmaps = merged_df.iloc[i:i+frame_stack]['rangeHeatmap'].to_list()
-        velocity = merged_df.iloc[i:i+frame_stack-1]['velocity'] 
-        
-        X.append(range_heatmaps)
-        y.append(velocity)
-    print(X)
-    # Convert lists to numpy arrays
-    X = np.asarray(X, dtype=object)
-    y = np.array(y)
-    
-    # Splitting data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    return X_train, X_test, y_train, y_test
