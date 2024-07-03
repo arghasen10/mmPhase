@@ -1,7 +1,36 @@
+# Create pickle dump of dictionary of numpy arrays rangeResult(n,182,256), velocity(n,), L_R(n,)
 import os
 import pickle
 import numpy as np
 from helper import *
+from generate_range_angle_plots import *
+import math
+
+
+def find_initial_l_r(rangeResult, peaks):
+    dopplerResult = dopplerFFT(rangeResult, frameConfig)      
+    dopplerResultabs=np.absolute(dopplerResult)
+    dopplerResultabs=np.sum(dopplerResultabs,axis=(0,1))
+    _,cfar_result=get_coordinates(dopplerResultabs)
+    az_angle_map=get_azimuthal_angle(dopplerResult,cfar_result)
+    range_angle=np.zeros((256,64),dtype=np.complex_)
+
+    for key,value in az_angle_map.items():      
+        range_angle[key[1]]+=np.abs(value)           
+    
+    range_angle = np.abs(range_angle)
+    locate_dots = []
+
+    for peak in peaks:
+        locate_dots.append([peak, np.argmax(range_angle[peak])])
+    x = [point[0] for point in locate_dots]
+    y = [point[1] for point in locate_dots]
+    
+    r_vals = [x_val*cfg.RANGE_RESOLUTION for x_val in x]
+    l_vals = [math.cos((i-32)*1.875/math.pi)*r_val for r_val, i in zip(r_vals, y)]
+
+    return r_vals, l_vals
+
 
 data_folder = "datasets"
 bin_files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
@@ -9,6 +38,7 @@ bin_files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(d
 velocities = []
 rangeResults = []
 L_R = []
+r_vals, l_vals = 0, 0
 
 for file_name in bin_files:
     print("Processing file ", file_name)
@@ -51,6 +81,7 @@ for file_name in bin_files:
         # For first frame take all peaks as consistent peaks
         if frame_no == 0:
             all_consistent_peaks.append(peaks)
+            r_vals, l_vals = find_initial_l_r(rangeResult, peaks)
         else:
             previous_peaks = all_range_index[frame_no-1]
             current_peaks = all_range_index[frame_no]
@@ -59,7 +90,9 @@ for file_name in bin_files:
         vel_array_frame = np.array(get_velocity(rangeResult,all_consistent_peaks[frame_no],info_dict)).flatten()
         mean_velocity = (vel_array_frame.mean())
         velocities.append(mean_velocity)
-        L_R.append([info_dict[' L'], info_dict[' R']])
+        L_R.append([l_vals, r_vals])
+
+        
 
 
 # Convert lists to numpy arrays
@@ -67,9 +100,9 @@ rangeResults_array = np.array(rangeResults)
 velocities_array = np.array(velocities)
 L_R_array = np.array(L_R)
 
-data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array, 'L_R': L_R_array}
+data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array*100, 'L_R': L_R_array}
 
-with open('merged_data.pkl', 'wb') as f:
+with open('merged_data_quant.pkl', 'wb') as f:
     pickle.dump(data_dict, f)
 
 print(f"Merged data saved to merged_data.pkl")
