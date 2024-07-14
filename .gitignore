@@ -17,3 +17,4 @@ gt_speed.json
 imuestimate.json
 estimated_speed_mmPhase.json
 estimated_speed_doppler.json
+**/*.keras
