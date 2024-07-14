@@ -3,3 +3,6 @@
 	url = https://github.com/ChristopherLu/milliEgo.git
 [submodule "milliEgo/"]
 	url = https://github.com/arghasen10/milliEgo.git
+[submodule "radarize_ae"]
+	path = radarize_ae
+	url = https://github.com/arghasen10/radarize_ae.git
