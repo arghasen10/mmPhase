@@ -1,7 +1,7 @@
-# Create pickle dump of dictionary of numpy arrays rangeResult(n,182,256), velocity(n,), L_R(n,)
 import os
 import pickle
 import numpy as np
+import pandas as pd
 from helper import *
 from generate_range_angle_plots import *
 import math
@@ -9,14 +9,14 @@ import math
 
 def find_initial_l_r(rangeResult, peaks):
     dopplerResult = dopplerFFT(rangeResult, frameConfig)      
-    dopplerResultabs=np.absolute(dopplerResult)
-    dopplerResultabs=np.sum(dopplerResultabs,axis=(0,1))
-    _,cfar_result=get_coordinates(dopplerResultabs)
-    az_angle_map=get_azimuthal_angle(dopplerResult,cfar_result)
-    range_angle=np.zeros((256,64),dtype=np.complex_)
+    dopplerResultabs = np.absolute(dopplerResult)
+    dopplerResultabs = np.sum(dopplerResultabs, axis=(0, 1))
+    _, cfar_result = get_coordinates(dopplerResultabs)
+    az_angle_map = get_azimuthal_angle(dopplerResult, cfar_result)
+    range_angle = np.zeros((256, 64), dtype=np.complex_)
 
-    for key,value in az_angle_map.items():      
-        range_angle[key[1]]+=np.abs(value)           
+    for key, value in az_angle_map.items():      
+        range_angle[key[1]] += np.abs(value)           
     
     range_angle = np.abs(range_angle)
     locate_dots = []
@@ -26,8 +26,8 @@ def find_initial_l_r(rangeResult, peaks):
     x = [point[0] for point in locate_dots]
     y = [point[1] for point in locate_dots]
     
-    r_vals = [x_val*cfg.RANGE_RESOLUTION for x_val in x]
-    l_vals = [math.cos((i-32)*1.875/math.pi)*r_val for r_val, i in zip(r_vals, y)]
+    r_vals = [x_val * cfg.RANGE_RESOLUTION for x_val in x]
+    l_vals = [math.cos((i - 32) * 1.875 / math.pi) * r_val for r_val, i in zip(r_vals, y)]
 
     return r_vals, l_vals
 
@@ -64,7 +64,7 @@ for file_name in bin_files:
         for i in range(pointCloudProcessCFG.frameConfig.numTxAntennas):
             for j in range(pointCloudProcessCFG.frameConfig.numRxAntennas):
                 r_r = np.abs(rangeResult[i][j])
-                r_r[:,0:10] = 0
+                r_r[:, 0:10] = 0
                 min_val = np.min(r_r)
                 max_val = np.max(r_r)
                 r_r_normalise = (r_r - min_val) / (max_val - min_val) * 1000
@@ -75,7 +75,7 @@ for file_name in bin_files:
         range_abs_combined_nparray /= (pointCloudProcessCFG.frameConfig.numTxAntennas * pointCloudProcessCFG.frameConfig.numRxAntennas)
         range_abs_combined_nparray_collapsed = np.sum(range_abs_combined_nparray, axis=0) / pointCloudProcessCFG.frameConfig.numLoopsPerFrame
         peaks, _ = find_peaks(range_abs_combined_nparray_collapsed)
-        intensities_peaks = [[range_abs_combined_nparray_collapsed[idx],idx] for idx in peaks]
+        intensities_peaks = [[range_abs_combined_nparray_collapsed[idx], idx] for idx in peaks]
         peaks = [i[1] for i in sorted(intensities_peaks, reverse=True)[:3]]
         all_range_index.append(peaks)
         # For first frame take all peaks as consistent peaks
@@ -83,26 +83,33 @@ for file_name in bin_files:
             all_consistent_peaks.append(peaks)
             r_vals, l_vals = find_initial_l_r(rangeResult, peaks)
         else:
-            previous_peaks = all_range_index[frame_no-1]
+            previous_peaks = all_range_index[frame_no - 1]
             current_peaks = all_range_index[frame_no]
             consistent_peaks = get_consistent_peaks(previous_peaks, current_peaks, threshold=10)
             all_consistent_peaks.append(consistent_peaks)
-        vel_array_frame = np.array(get_velocity(rangeResult,all_consistent_peaks[frame_no],info_dict)).flatten()
+        vel_array_frame = np.array(get_velocity(rangeResult, all_consistent_peaks[frame_no], info_dict)).flatten()
         mean_velocity = (vel_array_frame.mean())
         velocities.append(mean_velocity)
         L_R.append([l_vals, r_vals])
 
-        
 
+# Read velocities from velocity_comparison_results.csv
+velocity_comparison_results = pd.read_csv('velocity_comparison_results.csv')
+vicon_dict = dict(zip(velocity_comparison_results['file_name'], velocity_comparison_results['estimated_velocity']))
 
 # Convert lists to numpy arrays
 rangeResults_array = np.array(rangeResults)
 velocities_array = np.array(velocities)
 L_R_array = np.array(L_R)
 
-data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array*100, 'L_R': L_R_array}
+# Collect vicon velocities corresponding to bin files
+vicon_velocities = [vicon_dict[file_name] for file_name in bin_files]
 
+# Create the final dictionary
+data_dict = {'rangeResult': rangeResults_array, 'velocity': velocities_array * 100, 'L_R': L_R_array, 'vicon': np.array(vicon_velocities)}
+
+# Save the dictionary as a pickle file
 with open('merged_data_quant.pkl', 'wb') as f:
     pickle.dump(data_dict, f)
 
-print(f"Merged data saved to merged_data.pkl")
+print(f"Merged data saved to merged_data_quant.pkl")
