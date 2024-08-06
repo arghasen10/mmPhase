@@ -56,12 +56,14 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--length', type=int, help='Initial length')
     parser.add_argument('-r0', '--radial', type=int, help='Initial radial distance')
     parser.add_argument('-d', '--descp', type=str, help='Data description')
+    parser.add_argument('-mac', '--macadd', type=str, help='Mac Address of mmWave Studio')
     parser.add_argument('-camera', action='store_true')
     parser.add_argument('-imu', action='store_true')
-    os.system("sudo macchanger --mac=c0:18:50:da:37:e0 eth0")
     ans1=input("Have you connected the ethernet to Jetson? yes/no: ")
     camera_pass = False
     args = parser.parse_args()
+    mac_command = f"sudo macchanger --mac={args.mac} eth0"
+    os.system(mac_command)
     if(args.camera):
         ans3=input("Have you connected camera cable? yes/no: ")
         if(ans3=="yes"):
@@ -107,9 +109,9 @@ if __name__ == "__main__":
             os.system(f"rm ./imu_data/{imu_filename}")
             print(f"./imu_data/{imu_filename} deleted successfully")
             sys.exit()
-        os.system(f"mv {file_name} /media/stick/Seagate\ Backup\ Plus\ Drive/")
-        if (args.imu):
-            os.system(f"mv ./imu_data/{imu_filename} /media/stick/Seagate\ Backup\ Plus\ Drive/imu_data/")
+        # os.system(f"mv {file_name} /media/stick/Seagate\ Backup\ Plus\ Drive/")
+        # if (args.imu):
+        #     os.system(f"mv ./imu_data/{imu_filename} /media/stick/Seagate\ Backup\ Plus\ Drive/imu_data/")
         file_path="dataset_stick.csv"
         data=[file_name,n_frames,n_chirps,tc,adc_samples,sampling_rate,periodicity,l,r0,descri]
         if r0==l:
