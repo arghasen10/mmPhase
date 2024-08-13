@@ -17,7 +17,7 @@ from utils.video_cap import capture_video
 
 def execute_c_program(c_program_path, c_program_args):
     command=[c_program_path] + c_program_args
-    
+    print("command: ", command)
     # Execute the C program
     try:
         print("Executing C program...")
@@ -56,13 +56,13 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--length', type=int, help='Initial length')
     parser.add_argument('-r0', '--radial', type=int, help='Initial radial distance')
     parser.add_argument('-d', '--descp', type=str, help='Data description')
-    parser.add_argument('-mac', '--macadd', type=str, help='Mac Address of mmWave Studio')
     parser.add_argument('-camera', action='store_true')
     parser.add_argument('-imu', action='store_true')
     ans1=input("Have you connected the ethernet to Jetson? yes/no: ")
     camera_pass = False
     args = parser.parse_args()
-    mac_command = f"sudo macchanger --mac={args.mac} eth0"
+    mac_command = f"sudo macchanger --mac=08:97:98:70:B9:13 eth0"
+    print(mac_command)
     os.system(mac_command)
     if(args.camera):
         ans3=input("Have you connected camera cable? yes/no: ")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         c_program_path = "/home/stick/mmPhase/data_collect_mmwave_only" 
         image_folder_path = "./scene_annotation/"
         now = datetime.now()
-        date_string = str(now.strftime('%Y-%m-%d %H:%M:%S'))
+        date_string = str(now.strftime('%Y-%m-%d_%H_%M_%S'))
         n_frames = str(args.nframes)
         n_chirps = str(args.nchirps)
         tc       = str(args.timechirp)
@@ -109,9 +109,9 @@ if __name__ == "__main__":
             os.system(f"rm ./imu_data/{imu_filename}")
             print(f"./imu_data/{imu_filename} deleted successfully")
             sys.exit()
-        # os.system(f"mv {file_name} /media/stick/Seagate\ Backup\ Plus\ Drive/")
-        # if (args.imu):
-        #     os.system(f"mv ./imu_data/{imu_filename} /media/stick/Seagate\ Backup\ Plus\ Drive/imu_data/")
+        #os.system(f"mv {file_name} /media/stick/Seagate\ Backup\ Plus\ Drive/")
+        #if (args.imu):
+            #os.system(f"mv ./imu_data/{imu_filename} /media/stick/Seagate\ Backup\ Plus\ Drive/imu_data/")
         file_path="dataset_stick.csv"
         data=[file_name,n_frames,n_chirps,tc,adc_samples,sampling_rate,periodicity,l,r0,descri]
         if r0==l:
