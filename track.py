@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-import trajectory
+import trajectory_modified
 import math
 random.seed(42)
 np.random.seed(42)
