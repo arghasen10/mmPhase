@@ -15,8 +15,8 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 #Training
 df=pd.read_pickle('merged_data_quant.pkl')
 rangeResultabs=df['rangeResult'].astype(np.float32)
-y_true=df['velocity'].astype(np.float32)
-y_est=df['y_estimate'].astype(np.float32)
+y_est=df['velocity'].astype(np.float32)
+y_true=df['vicon'].astype(np.float32)
 
 y_TRUE=np.hstack((y_est.reshape(-1,1),y_true.reshape(-1,1)))
 
@@ -73,4 +73,3 @@ mse = mse_metric.result().numpy()
 
 print(f'MAE: {mae}')
 print(f'MSE: {mse}')
-

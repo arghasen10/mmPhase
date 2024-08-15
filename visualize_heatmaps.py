@@ -1,6 +1,10 @@
 import os
 from os.path import isfile, join
 from statistics import mode
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from scipy.signal import find_peaks
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 from helper import *
@@ -83,6 +87,6 @@ for file_name in bin_files:
         if i < len(consistent_peaks):
             frames.append((heatmap, consistent_peaks[i], mode_peak[i], file_name))
     ani = FuncAnimation(fig, update, frames=frames, repeat=False)
-    mywriter = animation.FFMpegWriter(fps=5)
-    ani.save("animations/"+file_name+".mp4",writer=mywriter)
+    mywriter = animation.PillowWriter(fps=5)
+    ani.save("animations/"+file_name+".gif", writer=mywriter)
     print("Animation", file_name, "saved.")
