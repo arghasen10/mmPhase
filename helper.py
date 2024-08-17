@@ -47,9 +47,11 @@ class PointCloudProcessCFG:  #
         self.outputSNR = True
         self.outputRange = True
         self.outputInMeter = True
-        self.EnergyThrMed = True
+        self.EnergyThrMed = False
+        self.EnergyThrPer95 = True
         self.ConstNoPCD = False
         self.dopplerToLog = False
+        self.NoStaticPoints = True
 
         dim = 3
         if self.outputVelocity:
@@ -155,7 +157,7 @@ def naive_xyz(virtual_ant, num_tx=3, num_rx=4, fft_size=64):  #
     return x_vector, y_vector, z_vector
 
 
-def frame2pointcloud(dopplerResult, pointCloudProcessCFG):
+def frame2pointcloud(dopplerResult, pointCloudProcessCFG, selected_range_bins=None):
     dopplerResultSumAllAntenna = np.sum(dopplerResult, axis=(0, 1))
     if pointCloudProcessCFG.dopplerToLog:
         dopplerResultInDB = np.log10(np.absolute(dopplerResultSumAllAntenna))
@@ -165,6 +167,12 @@ def frame2pointcloud(dopplerResult, pointCloudProcessCFG):
     if pointCloudProcessCFG.RangeCut:  
         dopplerResultInDB[:, :25] = -100
         dopplerResultInDB[:, 125:] = -100
+    
+    if selected_range_bins is not None:
+        mask = np.zeros_like(dopplerResultInDB, dtype=bool)
+        mask[:, selected_range_bins] = True
+        dopplerResultInDB = dopplerResultInDB * mask
+
     cfarResult = np.zeros(dopplerResultInDB.shape, bool)
     if pointCloudProcessCFG.EnergyTop128:
         top_size = 128
@@ -189,6 +197,12 @@ def frame2pointcloud(dopplerResult, pointCloudProcessCFG):
     pointCloud = np.transpose(pointCloud, (1, 0))
     if pointCloudProcessCFG.EnergyThrMed:
         idx = np.argwhere(pointCloud[:, 4] > np.median(pointCloud[:, 4])).flatten()
+        pointCloud = pointCloud[idx]
+    if pointCloudProcessCFG.EnergyThrPer95:
+        idx = np.argwhere(pointCloud[:, 4] > np.percentile(pointCloud[:, 4], q=95)).flatten()
+        pointCloud = pointCloud[idx]
+    if pointCloudProcessCFG.NoStaticPoints:
+        idx = np.argwhere(pointCloud[:, 3] != 0).flatten()
         pointCloud = pointCloud[idx]
     if pointCloudProcessCFG.ConstNoPCD:
         pointCloud = reg_data(pointCloud, 128)  
