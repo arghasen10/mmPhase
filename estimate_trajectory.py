@@ -22,6 +22,24 @@ def calculate_combined_std(point_cloud_data):
     return combined_std
 
 
+def apply_clustering_and_plot(filtered_data, output_folder='clustered_scatter_plots'):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    raw_poincloud_data_for_plot = []
+    all_cluster_labels = []
+
+    for frame_no, data in enumerate(filtered_data):
+        X = data[:, [0, 1,]]  # x, y
+        
+        clustering = DBSCAN(eps=0.05, min_samples=10).fit(X)
+        cluster_labels = clustering.labels_
+        raw_poincloud_data_for_plot.append(data)
+        all_cluster_labels.append(cluster_labels)
+    anim = FuncAnimation(fig, update, frames=len(filtered_data), interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,all_cluster_labels,))
+    anim.save('static_3d_scatter_animation.gif', writer='ffmpeg', fps=10)
+
+
 def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folder='scatter_plots'):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -30,7 +48,6 @@ def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folde
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         
-        # Calculate the standard deviation for each axis
         std_x = np.std(current_data[:, 0])
         std_y = np.std(current_data[:, 1])
         std_z = np.std(current_data[:, 2])
@@ -40,9 +57,6 @@ def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folde
         velocity = np.mean(doppler_shifts) if len(doppler_shifts) > 0 else 0
         std_dev_str = f'Combined Stdev: {combined_std:.2f}, Velocity: {velocity:.2f}, Count: {cluster_count}'
         
-        # Calculate the velocity (assuming it's based on doppler shifts)
-               
-        # Create scatter plot
         scat = ax.scatter(current_data[:, 0], current_data[:, 1], current_data[:, 2], c=current_labels, cmap='viridis', marker='o')
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 2)
@@ -52,7 +66,6 @@ def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folde
         ax.set_zlabel('Z axis')
         ax.set_title(f'Frame {frame_no}\n{std_dev_str}')
         
-        # Save the figure
         file_name = os.path.join(output_folder, f'frame_{frame_no:03d}.png')
         plt.savefig(file_name)
         plt.close(fig)
@@ -68,17 +81,15 @@ def update(frame,raw_poincloud_data_for_plot,cluster_labels):
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
     current_data = raw_poincloud_data_for_plot[frame]
+    print(current_data)
     std_x = np.std(current_data[:, 0])
     std_y = np.std(current_data[:, 1])
     std_z = np.std(current_data[:, 2])
     std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
         
     ax.set_title(f'3D Scatter Plot Animation (Frame {frame})\n{std_dev_str}')
-
-    # Update the data for the current frame
     
     current_labels = cluster_labels[frame]
-    # Update the scatter plot
     doppler_shifts = current_data[:,3]
     normalized_doppler_shifts = (doppler_shifts-doppler_shifts.min())/(doppler_shifts.max()-doppler_shifts.min())
     scat = ax.scatter(current_data[:, 0], current_data[:, 1], current_data[:, 2],c=current_labels, cmap='viridis', marker='o')
@@ -92,7 +103,6 @@ if __name__ == "__main__":
     for file_name in bin_files:
         file_name = "2024-03-29_vicon_test_14.bin"
         info_dict = get_info(file_name)
-        print(info_dict)
         run_data_read_only_sensor(info_dict)
         bin_filename = 'datasets/only_sensor' + info_dict['filename'][0]
         bin_reader = RawDataReader(bin_filename)
@@ -138,18 +148,16 @@ if __name__ == "__main__":
             normalized_power_profile = (power_profile - power_profile.min()) / (power_profile.max() - power_profile.min())
 
             pointCloud_data = np.concatenate([normalized_doppler_shifts.reshape(-1,1)], axis=1)
-            # clusters = hcluster.fclusterdata(pointCloud_data, t=1, criterion='distance')
             clustering = DBSCAN(eps=0.001, min_samples=5).fit(pointCloud_data)
             clusters=clustering.labels_
-            most_common_cluster = Counter(clusters).most_common(1)[0][0] 
             selected_clusters=[]
-            first_cluster = True
+            # Interesting observation, our cluster selection always selects the cluster with cluster id -1.
             for k,v in Counter(clusters).items():
                 cluster_points = pointCloud[clusters == k]
                 combined_std = calculate_combined_std(cluster_points)
                 if combined_std < 2 and len(cluster_points) > 50:
                     selected_clusters.append(k)
-                    print(k)
+                    # print(f"frame no: {frame_no}, cluster id: {k}")
             if len(selected_clusters) == 0:
                 skipped_frames+=1
                 continue
@@ -161,8 +169,9 @@ if __name__ == "__main__":
 
         bin_reader.close()
         
-        anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,cluster_labels,))
-        # anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,))
-        anim.save('3d_scatter_animation.gif', writer='ffmpeg', fps=10)
+        # anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,cluster_labels,))
+        # # anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,))
+        # anim.save('3d_scatter_animation.gif', writer='ffmpeg', fps=10)
         # save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels)
+        apply_clustering_and_plot(raw_poincloud_data_for_plot)
         break
