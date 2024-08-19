@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-import trajectory_modified
+from trajectory_modified import Trajectory
 import math
 random.seed(42)
 np.random.seed(42)
@@ -17,7 +17,7 @@ y_movs=[np.random.randint(0,7) for i in range(10)]
 trajectory_x = [start[0]] + np.cumsum(x_movs).tolist()
 trajectory_y = [start[1]] + np.cumsum(y_movs).tolist()
 #initialise the object
-track=trajectory.Trajectory()
+track=Trajectory()
 
 percentage_error_in_distance=0.02
 percentage_error_in_velocity=0.05
