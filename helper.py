@@ -4,7 +4,7 @@ import numpy as np
 import configuration as cfg
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
-import tensorflow as tf
+# import tensorflow as tf
 import seaborn as sns
 import argparse
 import pandas as pd

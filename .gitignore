@@ -25,3 +25,4 @@ animations/
 test_radarize.ipynb
 test_radarize.py
 *.gif
+**/*.ipynb
