@@ -6,12 +6,13 @@ import scipy.cluster.hierarchy as hcluster
 from collections import Counter
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import euclidean
+from trajectory_modified import Trajectory
 
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='3d')
 
-scat = ax.scatter([], [], [], s=50)
+# scat = ax.scatter([], [], [], s=50)
 
 
 def calculate_centroids(data, labels):
@@ -59,8 +60,20 @@ def track_static_clusters(filtered_data, file_name, output_folder='clustered_sca
         tracked_labels = np.array([tracked_clusters[label] for label in cluster_labels])
 
         raw_poincloud_data.append(data)
-        return raw_poincloud_data
+        return raw_poincloud_data, tracked_labels
     
+def get_tracked_cluster_info(cluster_pcds, cluster_labels):
+    centroids_dicts = []
+    for cluster_pcd, cluster_label in zip(cluster_pcds, cluster_labels):
+        unique_labels = np.unique(cluster_label)
+        centroids_dict = {}
+        for label in unique_labels:
+            cluster_points = cluster_pcd[cluster_label == label]
+            centroid = np.mean(cluster_points, axis=0)
+            centroids_dict[label] = centroid
+            centroids_dicts.append(centroids_dict)
+    return centroids_dicts
+
 def apply_clustering_and_plot(filtered_data, file_name, output_folder='clustered_scatter_plots', ):
     global fig
     if not os.path.exists(output_folder):
@@ -84,43 +97,44 @@ def apply_clustering_and_plot(filtered_data, file_name, output_folder='clustered
         raw_poincloud_data_for_plot.append(data)
         all_cluster_labels.append(tracked_labels)
     
-    if not save_individual_figures:
-        anim = FuncAnimation(fig, update, frames=len(raw_poincloud_data_for_plot), interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,all_cluster_labels,))
-        gif_name = file_name+"_tracked_static_3d_scatter_animation.gif"
-        anim.save(gif_name, writer='ffmpeg', fps=10)
-    else:
-        for frame_no, data in enumerate(raw_poincloud_data_for_plot):
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.clear()
-            ax.set_xlim(0, 1)
-            ax.set_ylim(0, 1)
-            ax.set_zlim(0, 1)
-            ax.set_xlabel('X axis')
-            ax.set_ylabel('Y axis')
-            ax.set_zlabel('Z axis')
-            current_data = data
-            labels = all_cluster_labels[frame_no]
-            unique_labels = np.unique(labels)
-            if len(Counter(labels)) == 1:
-                continue
-            for label in unique_labels:
-                cluster_data = current_data[labels == label]
-                if len(cluster_data) >= 10:
-                    ax.scatter(cluster_data[:, 0], cluster_data[:, 1], cluster_data[:, 2], label=f'Cluster {label}')
+    # if not save_individual_figures:
+    #     anim = FuncAnimation(fig, update, frames=len(raw_poincloud_data_for_plot), interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,all_cluster_labels,))
+    #     gif_name = file_name+"_tracked_static_3d_scatter_animation.gif"
+    #     anim.save(gif_name, writer='ffmpeg', fps=10)
+    # else:
+    #     for frame_no, data in enumerate(raw_poincloud_data_for_plot):
+    #         fig = plt.figure()
+    #         ax = fig.add_subplot(111, projection='3d')
+    #         ax.clear()
+    #         ax.set_xlim(0, 1)
+    #         ax.set_ylim(0, 1)
+    #         ax.set_zlim(0, 1)
+    #         ax.set_xlabel('X axis')
+    #         ax.set_ylabel('Y axis')
+    #         ax.set_zlabel('Z axis')
+    #         current_data = data
+    #         labels = all_cluster_labels[frame_no]
+    #         unique_labels = np.unique(labels)
+    #         if len(Counter(labels)) == 1:
+    #             continue
+    #         for label in unique_labels:
+    #             cluster_data = current_data[labels == label]
+    #             if len(cluster_data) >= 10:
+    #                 ax.scatter(cluster_data[:, 0], cluster_data[:, 1], cluster_data[:, 2], label=f'Cluster {label}')
 
-            std_x = np.std(current_data[:, 0])
-            std_y = np.std(current_data[:, 1])
-            std_z = np.std(current_data[:, 2])
-            std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=3, fontsize='small')
-            ax.set_title(f'3D Scatter Plot (Frame {frame_no})\n{std_dev_str}')
-            fig.tight_layout()
+    #         std_x = np.std(current_data[:, 0])
+    #         std_y = np.std(current_data[:, 1])
+    #         std_z = np.std(current_data[:, 2])
+    #         std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
+    #         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=3, fontsize='small')
+    #         ax.set_title(f'3D Scatter Plot (Frame {frame_no})\n{std_dev_str}')
+    #         fig.tight_layout()
 
-            # Save the plot as a PNG file
-            file_name = os.path.join(output_folder, f'frame_{frame_no:03d}.png')
-            plt.savefig(file_name)
-            plt.close(fig)
+    #         # Save the plot as a PNG file
+    #         file_name = os.path.join(output_folder, f'frame_{frame_no:03d}.png')
+    #         plt.savefig(file_name)
+    #         plt.close(fig)
+    return raw_poincloud_data_for_plot, all_cluster_labels
 
 def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folder='scatter_plots'):
     if not os.path.exists(output_folder):
@@ -154,44 +168,44 @@ def save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels, output_folde
         
         
         
-def update(frame,raw_poincloud_data_for_plot,cluster_labels):
-    ax.clear()  # Clear the previous frame
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 2)
-    ax.set_zlim(0, 1)
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
-    current_data = raw_poincloud_data_for_plot[frame]
-    labels = cluster_labels[frame]
-    unique_labels = np.unique(labels)
-    scatters = []
-    for label in unique_labels:
-        if label == -1:
-            continue  # Skip noise
-        cluster_data = current_data[labels == label]
-        scatter = ax.scatter(cluster_data[:, 0], cluster_data[:, 1], cluster_data[:, 2], label=f'Cluster {label}')
-        scatters.append(scatter)
-    std_x = np.std(current_data[:, 0])
-    std_y = np.std(current_data[:, 1])
-    std_z = np.std(current_data[:, 2])
-    std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
-    ax.legend(loc='upper center', ncol=3, fontsize='small')
-    ax.set_title(f'3D Scatter Plot Animation (Frame {frame})')
-    fig.tight_layout()
-    # current_labels = cluster_labels[frame]
-    # doppler_shifts = current_data[:,3]
-    # normalized_doppler_shifts = (doppler_shifts-doppler_shifts.min())/(doppler_shifts.max()-doppler_shifts.min())
-    # scat = ax.scatter(current_data[:, 0], current_data[:, 1], current_data[:, 2],c=current_labels, cmap='viridis', marker='o')
+# def update(frame,raw_poincloud_data_for_plot,cluster_labels):
+#     ax.clear()  # Clear the previous frame
+#     ax.set_xlim(0, 1)
+#     ax.set_ylim(0, 2)
+#     ax.set_zlim(0, 1)
+#     ax.set_xlabel('X axis')
+#     ax.set_ylabel('Y axis')
+#     ax.set_zlabel('Z axis')
+#     current_data = raw_poincloud_data_for_plot[frame]
+#     labels = cluster_labels[frame]
+#     unique_labels = np.unique(labels)
+#     scatters = []
+#     for label in unique_labels:
+#         # if label == -1:
+#         #     continue  # Skip noise
+#         cluster_data = current_data[labels == label]
+#         scatter = ax.scatter(cluster_data[:, 0], cluster_data[:, 1], cluster_data[:, 2], label=f'Cluster {label}')
+#         scatters.append(scatter)
+#     std_x = np.std(current_data[:, 0])
+#     std_y = np.std(current_data[:, 1])
+#     std_z = np.std(current_data[:, 2])
+#     std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
+#     ax.legend(loc='upper center', ncol=3, fontsize='small')
+#     ax.set_title(f'3D Scatter Plot Animation (Frame {frame})')
+#     fig.tight_layout()
+#     # current_labels = cluster_labels[frame]
+#     # doppler_shifts = current_data[:,3]
+#     # normalized_doppler_shifts = (doppler_shifts-doppler_shifts.min())/(doppler_shifts.max()-doppler_shifts.min())
+#     # scat = ax.scatter(current_data[:, 0], current_data[:, 1], current_data[:, 2],c=current_labels, cmap='viridis', marker='o')
     
-    return scat,
+#     return scat,
 
 
 if __name__ == "__main__":
     data_folder = "datasets"
     bin_files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f)) and f.endswith('.bin') and not f.startswith('only_sensor')]
     for file_name in bin_files:
-        file_name = "2024-03-29_vicon_test_14.bin"
+        file_name = "2024-03-29_vicon_35.bin"
         info_dict = get_info(file_name)
         run_data_read_only_sensor(info_dict)
         bin_filename = 'datasets/only_sensor' + info_dict['filename'][0]
@@ -201,6 +215,7 @@ if __name__ == "__main__":
         pointCloudProcessCFG = PointCloudProcessCFG()
         raw_poincloud_data_for_plot = []
         cluster_labels = []
+        velocities = []
         for frame_no in range(total_frame_number):
             bin_frame = bin_reader.getNextFrame(pointCloudProcessCFG.frameConfig)
             np_frame = bin2np_frame(bin_frame)
@@ -227,6 +242,7 @@ if __name__ == "__main__":
             peaks = [i[1] for i in sorted(intensities_peaks, reverse=True)[:3]]
 
             dopplerResult = dopplerFFT(rangeResult, frameConfig)
+            velocities.append(np.array(get_velocity(rangeResult, peaks, info_dict)).flatten())
             pointCloud = frame2pointcloud(dopplerResult, pointCloudProcessCFG)
             if len(pointCloud) == 6:
                 skipped_frames+=1
@@ -263,5 +279,29 @@ if __name__ == "__main__":
         # # anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,))
         # anim.save('3d_scatter_animation.gif', writer='ffmpeg', fps=10)
         # save_scatter_plots(raw_poincloud_data_for_plot, cluster_labels)
-        apply_clustering_and_plot(raw_poincloud_data_for_plot, file_name)
+        cluster_pcds, cluster_labels = apply_clustering_and_plot(raw_poincloud_data_for_plot, file_name)
+        centroids_dicts = get_tracked_cluster_info(cluster_pcds, cluster_labels)
+        print(centroids_dicts)
+        static_objects = []
+        track=Trajectory()
+        for idx, centroids in enumerate(centroids_dicts):   # For all frames
+            static_objects = []
+            if idx == 0:
+                prev_frame = centroids
+                continue
+            for key, centroid in centroids.items():
+                if key in prev_frame:
+                    static_objects.append([prev_frame[key][0], prev_frame[key][1], np.sqrt(centroids[key][0]**2+centroids[key][1]**2)])
+            prev_frame = centroids
+            track.estimate(static_objects,np.median(velocities))
+        
+        predicted_trajectory_x=track.traj[:,0]
+        predicted_trajectory_y=track.traj[:,1]  
+        print(f"Predicted trajectory x: {predicted_trajectory_x}, y: {predicted_trajectory_y}")
+        plt.cla()
+        plt.plot(predicted_trajectory_x, predicted_trajectory_y, marker='x', linestyle='--', color='red', label='Predicted Trajectory')
+        plt.xlim(-10, 10)
+        plt.ylim(-10, 10)
+        plt.savefig('trajectory_comparison.png')
+
         break

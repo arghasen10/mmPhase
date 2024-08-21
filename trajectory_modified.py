@@ -4,7 +4,8 @@ import itertools
 # Tp = 14e-6 
 # Tc = 72e-6 
 # T = 3*(Tp+Tc)
-T=1
+T=200e-3
+# T=1
 
 '''
 include code to do object tracking in this class, take two frames, frame i and frame i-1 and detect common objects
@@ -33,7 +34,7 @@ class Trajectory:
         |xn, yn, rn|
         ---      ---
         '''
-        Pr = self.localize(static_objects, vb)
+        Pr = self.localize(static_objects, vb) + self.traj[-1]
         if Pr is None:
             pass
         else:

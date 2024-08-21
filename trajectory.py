@@ -35,14 +35,14 @@ class Trajectory:
 
         static_objects = np.empty((0,3), np.float32)
 
-        Pr = localize(static_objects, vb)
+        Pr = self.localize(static_objects, vb)
 
         if Pr == None:
             pass
         else:
             self.traj = np.vstack((self.traj, Pr))
 
-    def localize(static_objects, vb):
+    def localize(self, static_objects, vb):
         
         #Number of points = NC2 = (N(N-1)/2)
         N = len(static_objects)

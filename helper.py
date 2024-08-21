@@ -158,7 +158,8 @@ def naive_xyz(virtual_ant, num_tx=3, num_rx=4, fft_size=64):  #
 
 
 def frame2pointcloud(dopplerResult, pointCloudProcessCFG, selected_range_bins=None):
-    dopplerResultSumAllAntenna = np.sum(dopplerResult, axis=(0, 1))
+    
+    dopplerResultSumAllAntenna = np.sum(np.abs(dopplerResult), axis=(0, 1))
     if pointCloudProcessCFG.dopplerToLog:
         dopplerResultInDB = np.log10(np.absolute(dopplerResultSumAllAntenna))
     else:
