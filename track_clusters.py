@@ -1,11 +1,7 @@
 from helper import *
-import os
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from collections import Counter
 from sklearn.cluster import DBSCAN
-from scipy.spatial.distance import euclidean
-from trajectory_modified import Trajectory
 from sklearn.preprocessing import MinMaxScaler
 from statistics import mode
 
@@ -18,30 +14,16 @@ def update(frame,raw_poincloud_data_for_plot,cluster_labels):
     ax.clear()  # Clear the previous frame
     ax.set_xlim(-10, 10)
     ax.set_ylim(0, 10)
-    # ax.set_zlim(0, 1)
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
-    # ax.set_zlabel('Z axis')
     current_data = raw_poincloud_data_for_plot[frame]
     print(current_data.shape)
     labels = cluster_labels[frame]
-    unique_labels = np.unique(labels)
-    scatters = []
-    # for label in unique_labels:
-    #     cluster_data = current_data[labels == label]
-    scatter = ax.scatter(current_data[:, 0], current_data[:, 1], s=50) #, current_data[:, 2])
-    scatter = ax.scatter([np.median(current_data[:, 0]),], [np.median(current_data[:, 1]),], s=50,color='red') #, current_data[:, 2])
-    # std_x = np.std(current_data[:, 0])
-    # std_y = np.std(current_data[:, 1])
-    # std_z = np.std(current_data[:, 2])
-    # std_dev_str = f'Stdev X: {std_x:.2f}, Y: {std_y:.2f}, Z: {std_z:.2f}'
-    # ax.legend(loc='upper center', ncol=3, fontsize='small')
+    
+    scatter = ax.scatter(current_data[:, 0], current_data[:, 1], s=50) 
+    scatter = ax.scatter([np.median(current_data[:, 0]),], [np.median(current_data[:, 1]),], s=50,color='red') 
     ax.set_title(f'3D Scatter Plot Animation (Frame {frame})')
     fig.tight_layout()
-    # current_labels = cluster_labels[frame]
-    # doppler_shifts = current_data[:,3]
-    # normalized_doppler_shifts = (doppler_shifts-doppler_shifts.min())/(doppler_shifts.max()-doppler_shifts.min())
-    # scat = ax.scatter(current_data[:, 0], current_data[:, 1], current_data[:, 2],c=current_labels, cmap='viridis', marker='o')
     return scatter,
 
 
@@ -66,10 +48,7 @@ def point_cloud_frames(file_name = None):
     bin_filename = 'datasets/only_sensor' + info_dict['filename'][0]
     bin_reader = RawDataReader(bin_filename)
     total_frame_number = int(info_dict[' Nf'][0])
-    skipped_frames = 0
     pointCloudProcessCFG = PointCloudProcessCFG()
-    raw_poincloud_data_for_plot = []
-    cluster_labels = []
     velocities = []
     for frame_no in range(total_frame_number):
         bin_frame = bin_reader.getNextFrame(pointCloudProcessCFG.frameConfig)
@@ -101,14 +80,12 @@ def point_cloud_frames(file_name = None):
         pointCloud = frame2pointcloud(dopplerResult, pointCloudProcessCFG)
         yield pointCloud
         
-gen=point_cloud_frames(file_name = "2024-03-29_vicon_210.bin")
+gen=point_cloud_frames(file_name = "2024-03-29_vicon_test_15.bin")
 total_data = []
 total_ids = []
 total_frames=0
 sdetect=DetectStatic()
 for frame in gen:
-    # if total_frames >= 30:
-    #     break
     clusters=sdetect.static_clusters(frame)
     datas=[];ids=[]
     for c,p in clusters.items():
@@ -122,5 +99,4 @@ for frame in gen:
     total_ids.append(np.array(ids))
     total_frames+=1
 anim = FuncAnimation(fig, update, frames=total_frames, interval=50, blit=True, fargs=(total_data,total_ids,))
-# # anim = FuncAnimation(fig, update, frames=total_frame_number-skipped_frames, interval=50, blit=True, fargs=(raw_poincloud_data_for_plot,))
 anim.save('3d_scatter_animation_new.gif', writer='ffmpeg', fps=10)
