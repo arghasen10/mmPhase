@@ -10,12 +10,10 @@ ax = fig.add_subplot(111,)
 scat = ax.scatter([], [], s=50)
 
 
-def get_traj(P1, P2, v_b, t):
+def get_traj(P1, P2, v_b, t, prev_point):
     C1 = np.array([(v_b * t) - P1[1] + (P1[0]**2 / (v_b * t - P1[0]))])
     B1 = np.array(P2[0] + (P2[1] * P1[0] / (v_b * t - P1[1])))
     translation_magnitude = v_b*t
-    print(v_b)
-    print(C1, B1)
     angle = np.arcsin((-B1) / C1)[0][0]
     rotation_matrix = np.array([
         [np.cos(angle), -np.sin(angle)],
@@ -25,6 +23,7 @@ def get_traj(P1, P2, v_b, t):
     rotated_point = np.dot(rotation_matrix, P1)
     translation_vector = translation_magnitude * np.array([np.cos(angle), np.sin(angle)])
     current_point = rotated_point + translation_vector
+    current_point += prev_point
     return current_point
 
 
@@ -35,7 +34,6 @@ def update(frame,raw_poincloud_data_for_plot,cluster_labels):
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     current_data = raw_poincloud_data_for_plot[frame]
-    print(current_data.shape)
     labels = cluster_labels[frame]
     
     scatter = ax.scatter(current_data[:, 0], current_data[:, 1], s=50) 
@@ -94,9 +92,10 @@ def point_cloud_frames(file_name = None):
         peaks = [i[1] for i in sorted(intensities_peaks, reverse=True)[:3]]
     
         dopplerResult = dopplerFFT(rangeResult, frameConfig)
-        velocities.append(np.array(get_velocity(rangeResult, peaks, info_dict)).flatten())
         pointCloud = frame2pointcloud(dopplerResult, pointCloudProcessCFG)
-        yield pointCloud
+        vel_array_frame = np.array(get_velocity(rangeResult, peaks, info_dict)).flatten()
+        mean_velocity = np.median(vel_array_frame)
+        yield pointCloud, mean_velocity
         
 gen=point_cloud_frames(file_name = "2024-03-29_vicon_test_15.bin")
 total_data = []
@@ -107,7 +106,7 @@ first_frame = True
 initial_coordinates = {}
 current_cluster = {}
 points = []
-prev_point = np.array([[0],[0]])
+prev_point = np.array([0,0])
 for frame, v_b in gen:
     clusters=sdetect.static_clusters(frame)
     datas=[];ids=[]
@@ -120,7 +119,8 @@ for frame, v_b in gen:
         datas.extend(p)
         ids.extend([c]*len(p))
         current_cluster.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
-        prev_point = get_traj(initial_coordinates[c],current_cluster[c],v_b, 0.2)
+        prev_point = get_traj(initial_coordinates[c],current_cluster[c],v_b, 0.2, prev_point)
+        initial_coordinates.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
         print(prev_point)
     if len(datas) == 0:
         continue
