@@ -5,9 +5,15 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 from statistics import mode
 
-fig = plt.figure()
-ax = fig.add_subplot(111,)
-scat = ax.scatter([], [], s=50)
+# fig = plt.figure()
+# ax = fig.add_subplot(111,)
+# scat = ax.scatter([], [], s=50)
+
+fig, ax = plt.subplots()
+ax.set_xlim(-10, 10)
+ax.set_ylim(0, 10)
+ax.set_xlabel('X axis')
+ax.set_ylabel('Y axis')
 
 
 def get_traj(P1, P2, v_b, t, prev_point):
@@ -20,12 +26,29 @@ def get_traj(P1, P2, v_b, t, prev_point):
         [np.sin(angle), np.cos(angle)]
     ])
     P1 = P1.flatten()
-    rotated_point = np.dot(rotation_matrix, P1)
-    translation_vector = translation_magnitude * np.array([np.cos(angle), np.sin(angle)])
+    rotated_point = np.dot(rotation_matrix, prev_point)
+    translation_vector = translation_magnitude * np.array([np.sin(angle), np.cos(angle)])
     current_point = rotated_point + translation_vector
-    current_point += prev_point
+    # current_point += prev_point
     return current_point
 
+
+def plot_traj(frame, points):
+    ax.clear()  # Clear the previous frame
+    ax.set_xlim(-10, 10)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    
+    current_point = points[frame]
+    
+    # Plot the points
+    scatter = ax.scatter(current_point[0], current_point[1], s=50, color='blue')
+    
+    ax.set_title(f'Trajectory Plot Animation (Frame {frame})')
+    return scatter,
+
+    
 
 def update(frame,raw_poincloud_data_for_plot,cluster_labels):
     ax.clear()  # Clear the previous frame
@@ -121,12 +144,15 @@ for frame, v_b in gen:
         current_cluster.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
         prev_point = get_traj(initial_coordinates[c],current_cluster[c],v_b, 0.2, prev_point)
         initial_coordinates.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
-        print(prev_point)
+        points.append(prev_point)
     if len(datas) == 0:
         continue
     print(f"Frame number: {total_frames}")
     total_data.append(np.array(datas))
     total_ids.append(np.array(ids))
     total_frames+=1
-anim = FuncAnimation(fig, update, frames=total_frames, interval=50, blit=True, fargs=(total_data,total_ids,))
-anim.save('3d_scatter_animation_new.gif', writer='ffmpeg', fps=10)
+# anim = FuncAnimation(fig, update, frames=total_frames, interval=50, blit=True, fargs=(total_data,total_ids,))
+# anim.save('3d_scatter_animation_new.gif', writer='ffmpeg', fps=10)
+
+anim = FuncAnimation(fig, plot_traj, frames=total_frames, interval=50, blit=True, fargs=(points,))
+anim.save('plot_trajectory.gif', writer='ffmpeg', fps=10)
