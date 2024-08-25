@@ -10,6 +10,24 @@ ax = fig.add_subplot(111,)
 scat = ax.scatter([], [], s=50)
 
 
+def get_traj(P1, P2, v_b, t):
+    C1 = np.array([(v_b * t) - P1[1] + (P1[0]**2 / (v_b * t - P1[0]))])
+    B1 = np.array(P2[0] + (P2[1] * P1[0] / (v_b * t - P1[1])))
+    translation_magnitude = v_b*t
+    print(v_b)
+    print(C1, B1)
+    angle = np.arcsin((-B1) / C1)[0][0]
+    rotation_matrix = np.array([
+        [np.cos(angle), -np.sin(angle)],
+        [np.sin(angle), np.cos(angle)]
+    ])
+    P1 = P1.flatten()
+    rotated_point = np.dot(rotation_matrix, P1)
+    translation_vector = translation_magnitude * np.array([np.cos(angle), np.sin(angle)])
+    current_point = rotated_point + translation_vector
+    return current_point
+
+
 def update(frame,raw_poincloud_data_for_plot,cluster_labels):
     ax.clear()  # Clear the previous frame
     ax.set_xlim(-10, 10)
@@ -85,13 +103,25 @@ total_data = []
 total_ids = []
 total_frames=0
 sdetect=DetectStatic()
-for frame in gen:
+first_frame = True
+initial_coordinates = {}
+current_cluster = {}
+points = []
+prev_point = np.array([[0],[0]])
+for frame, v_b in gen:
     clusters=sdetect.static_clusters(frame)
     datas=[];ids=[]
     for c,p in clusters.items():
-        print(c, p.shape)
+        if first_frame:
+            initial_coordinates.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
+            first_frame = False
+            continue
+        # print(c, p.shape)
         datas.extend(p)
         ids.extend([c]*len(p))
+        current_cluster.update({c:np.array([[np.median(p[:,0])],[np.median(p[:,1])]])})
+        prev_point = get_traj(initial_coordinates[c],current_cluster[c],v_b, 0.2)
+        print(prev_point)
     if len(datas) == 0:
         continue
     print(f"Frame number: {total_frames}")
